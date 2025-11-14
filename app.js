@@ -24,7 +24,7 @@ class ATCTrainingApp {
 
         this.recognition = new SpeechRecognition();
         this.recognition.continuous = false;
-        this.recognition.interimResults = false;
+        this.recognition.interimResults = true; // Enable real-time transcription
         this.recognition.lang = 'en-US';
 
         this.recognition.onstart = () => {
@@ -32,11 +32,34 @@ class ATCTrainingApp {
             this.updateStatus('Listening... Speak now');
             document.getElementById('pttButton').classList.add('active');
             document.getElementById('signalIndicator').classList.add('transmitting');
+
+            // Show live transcription box
+            this.showLiveTranscription();
         };
 
         this.recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            this.handlePilotTransmission(transcript);
+            let interimTranscript = '';
+            let finalTranscript = '';
+
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript;
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+
+            // Update live transcription display
+            if (interimTranscript) {
+                this.updateLiveTranscription(interimTranscript);
+            }
+
+            // When final result, send to ATC
+            if (finalTranscript) {
+                this.hideLiveTranscription();
+                this.handlePilotTransmission(finalTranscript);
+            }
         };
 
         this.recognition.onerror = (event) => {
@@ -45,12 +68,14 @@ class ATCTrainingApp {
             this.isListening = false;
             document.getElementById('pttButton').classList.remove('active');
             document.getElementById('signalIndicator').classList.remove('transmitting');
+            this.hideLiveTranscription();
         };
 
         this.recognition.onend = () => {
             this.isListening = false;
             document.getElementById('pttButton').classList.remove('active');
             document.getElementById('signalIndicator').classList.remove('transmitting');
+            this.hideLiveTranscription();
             if (!this.isSpeaking) {
                 this.updateStatus('Ready');
             }
@@ -335,6 +360,38 @@ class ATCTrainingApp {
 
     updateStatus(text) {
         document.getElementById('status').textContent = text;
+    }
+
+    showLiveTranscription() {
+        // Create live transcription element if it doesn't exist
+        let liveBox = document.getElementById('liveTranscription');
+        if (!liveBox) {
+            liveBox = document.createElement('div');
+            liveBox.id = 'liveTranscription';
+            liveBox.className = 'live-transcription';
+            liveBox.innerHTML = '<div class="transcription-header">You are saying:</div><div class="transcription-text"></div>';
+
+            const conversation = document.getElementById('conversation');
+            conversation.parentNode.insertBefore(liveBox, conversation);
+        }
+        liveBox.style.display = 'block';
+    }
+
+    updateLiveTranscription(text) {
+        const liveBox = document.getElementById('liveTranscription');
+        if (liveBox) {
+            const textElement = liveBox.querySelector('.transcription-text');
+            if (textElement) {
+                textElement.textContent = text;
+            }
+        }
+    }
+
+    hideLiveTranscription() {
+        const liveBox = document.getElementById('liveTranscription');
+        if (liveBox) {
+            liveBox.style.display = 'none';
+        }
     }
 
     showMainMenu() {

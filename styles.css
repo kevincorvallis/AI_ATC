@@ -711,3 +711,62 @@ footer {
     margin-top: 20px;
     text-align: left;
 }
+
+/* Live Transcription Display */
+.live-transcription {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border: 2px solid var(--primary-color);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    animation: pulse-glow 1.5s ease-in-out infinite;
+    display: none;
+}
+
+.transcription-header {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.transcription-text {
+    font-size: 1.2rem;
+    color: var(--text-color);
+    min-height: 30px;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(37, 99, 235, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(37, 99, 235, 0.6);
+    }
+}
+
+/* Enhanced pilot message styling */
+.pilot-message {
+    background: rgba(37, 99, 235, 0.25);
+    border-left: 4px solid var(--primary-color);
+    font-size: 1.05rem;
+}
+
+.pilot-message strong {
+    color: var(--primary-color);
+}
+
+/* ATC message enhanced */
+.atc-message {
+    background: rgba(16, 185, 129, 0.25);
+    border-left: 4px solid var(--success-color);
+    font-size: 1.05rem;
+}
+
+.atc-message strong {
+    color: var(--success-color);
+}
