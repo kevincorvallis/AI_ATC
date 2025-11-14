@@ -1,16 +1,15 @@
 // Live ATC Airport Database
-// Data source: LiveATC.net
+// Links to LiveATC.net feeds
 
 const AIRPORTS = {
-    // North America
+    // North America - Major Airports
     'KJFK': {
         name: 'New York JFK',
         city: 'New York, USA',
         region: 'North America',
         feeds: [
-            { name: 'Tower', url: 'https://s1-bos.liveatc.net/kjfk_twr?nocache=2024', frequency: '123.900' },
-            { name: 'Ground', url: 'https://s1-bos.liveatc.net/kjfk_gnd?nocache=2024', frequency: '121.650' },
-            { name: 'Approach', url: 'https://s1-bos.liveatc.net/kjfk_app?nocache=2024', frequency: '125.700' }
+            { name: 'Tower', url: 'https://www.liveatc.net/search/?icao=kjfk', frequency: '123.900', external: true },
+            { name: 'All Feeds', url: 'https://www.liveatc.net/search/?icao=kjfk', frequency: 'Multiple', external: true }
         ]
     },
     'KLAX': {
@@ -18,9 +17,7 @@ const AIRPORTS = {
         city: 'Los Angeles, USA',
         region: 'North America',
         feeds: [
-            { name: 'Tower', url: 'https://s1-sac.liveatc.net/klax_twr?nocache=2024', frequency: '133.900' },
-            { name: 'Ground', url: 'https://s1-sac.liveatc.net/klax_gnd?nocache=2024', frequency: '121.750' },
-            { name: 'Approach', url: 'https://s1-sac.liveatc.net/klax_app?nocache=2024', frequency: '124.500' }
+            { name: 'All Feeds', url: 'https://www.liveatc.net/search/?icao=klax', frequency: 'Multiple', external: true }
         ]
     },
     'KORD': {
@@ -28,9 +25,7 @@ const AIRPORTS = {
         city: 'Chicago, USA',
         region: 'North America',
         feeds: [
-            { name: 'Tower', url: 'https://s1-chi.liveatc.net/kord_twr?nocache=2024', frequency: '126.900' },
-            { name: 'Ground', url: 'https://s1-chi.liveatc.net/kord_gnd?nocache=2024', frequency: '121.900' },
-            { name: 'Approach', url: 'https://s1-chi.liveatc.net/kord_app?nocache=2024', frequency: '125.000' }
+            { name: 'All Feeds', url: 'https://www.liveatc.net/search/?icao=kord', frequency: 'Multiple', external: true }
         ]
     },
     'KATL': {
@@ -38,9 +33,7 @@ const AIRPORTS = {
         city: 'Atlanta, USA',
         region: 'North America',
         feeds: [
-            { name: 'Tower', url: 'https://s1-atl.liveatc.net/katl_twr?nocache=2024', frequency: '119.100' },
-            { name: 'Ground', url: 'https://s1-atl.liveatc.net/katl_gnd?nocache=2024', frequency: '121.750' },
-            { name: 'Approach', url: 'https://s1-atl.liveatc.net/katl_app?nocache=2024', frequency: '124.850' }
+            { name: 'All Feeds', url: 'https://www.liveatc.net/search/?icao=katl', frequency: 'Multiple', external: true }
         ]
     },
     'KSFO': {
@@ -48,8 +41,31 @@ const AIRPORTS = {
         city: 'San Francisco, USA',
         region: 'North America',
         feeds: [
-            { name: 'Tower', url: 'https://s1-sac.liveatc.net/ksfo_twr?nocache=2024', frequency: '120.500' },
-            { name: 'Ground', url: 'https://s1-sac.liveatc.net/ksfo_gnd?nocache=2024', frequency: '121.800' }
+            { name: 'All Feeds', url: 'https://www.liveatc.net/search/?icao=ksfo', frequency: 'Multiple', external: true }
+        ]
+    },
+    'KBOS': {
+        name: 'Boston Logan',
+        city: 'Boston, USA',
+        region: 'North America',
+        feeds: [
+            { name: 'All Feeds', url: 'https://www.liveatc.net/search/?icao=kbos', frequency: 'Multiple', external: true }
+        ]
+    },
+    'KDFW': {
+        name: 'Dallas/Fort Worth',
+        city: 'Dallas, USA',
+        region: 'North America',
+        feeds: [
+            { name: 'All Feeds', url: 'https://www.liveatc.net/search/?icao=kdfw', frequency: 'Multiple', external: true }
+        ]
+    },
+    'KDEN': {
+        name: 'Denver Intl',
+        city: 'Denver, USA',
+        region: 'North America',
+        feeds: [
+            { name: 'All Feeds', url: 'https://www.liveatc.net/search/?icao=kden', frequency: 'Multiple', external: true }
         ]
     },
     'KMIA': {
@@ -57,8 +73,23 @@ const AIRPORTS = {
         city: 'Miami, USA',
         region: 'North America',
         feeds: [
-            { name: 'Tower', url: 'https://s1-mia.liveatc.net/kmia_twr?nocache=2024', frequency: '118.300' },
-            { name: 'Ground', url: 'https://s1-mia.liveatc.net/kmia_gnd?nocache=2024', frequency: '121.800' }
+            { name: 'All Feeds', url: 'https://www.liveatc.net/search/?icao=kmia', frequency: 'Multiple', external: true }
+        ]
+    },
+    'KLAS': {
+        name: 'Las Vegas McCarran',
+        city: 'Las Vegas, USA',
+        region: 'North America',
+        feeds: [
+            { name: 'All Feeds', url: 'https://www.liveatc.net/search/?icao=klas', frequency: 'Multiple', external: true }
+        ]
+    },
+    'KSEA': {
+        name: 'Seattle-Tacoma',
+        city: 'Seattle, USA',
+        region: 'North America',
+        feeds: [
+            { name: 'All Feeds', url: 'https://www.liveatc.net/search/?icao=ksea', frequency: 'Multiple', external: true }
         ]
     },
     'CYYZ': {
@@ -66,8 +97,7 @@ const AIRPORTS = {
         city: 'Toronto, Canada',
         region: 'North America',
         feeds: [
-            { name: 'Tower', url: 'https://s1-tor.liveatc.net/cyyz_twr?nocache=2024', frequency: '118.700' },
-            { name: 'Ground', url: 'https://s1-tor.liveatc.net/cyyz_gnd?nocache=2024', frequency: '121.900' }
+            { name: 'All Feeds', url: 'https://www.liveatc.net/search/?icao=cyyz', frequency: 'Multiple', external: true }
         ]
     },
     'CYVR': {
@@ -75,8 +105,7 @@ const AIRPORTS = {
         city: 'Vancouver, Canada',
         region: 'North America',
         feeds: [
-            { name: 'Tower', url: 'https://s1-van.liveatc.net/cyvr_twr?nocache=2024', frequency: '119.700' },
-            { name: 'Ground', url: 'https://s1-van.liveatc.net/cyvr_gnd?nocache=2024', frequency: '121.700' }
+            { name: 'All Feeds', url: 'https://www.liveatc.net/search/?icao=cyvr', frequency: 'Multiple', external: true }
         ]
     },
 
@@ -86,17 +115,7 @@ const AIRPORTS = {
         city: 'London, UK',
         region: 'Europe',
         feeds: [
-            { name: 'Tower', url: 'https://s1-bos.liveatc.net/egll_twr?nocache=2024', frequency: '118.700' },
-            { name: 'Approach', url: 'https://s1-bos.liveatc.net/egll_app?nocache=2024', frequency: '119.200' }
-        ]
-    },
-    'EIDW': {
-        name: 'Dublin',
-        city: 'Dublin, Ireland',
-        region: 'Europe',
-        feeds: [
-            { name: 'Tower', url: 'https://s1-bos.liveatc.net/eidw_twr?nocache=2024', frequency: '118.600' },
-            { name: 'Approach', url: 'https://s1-bos.liveatc.net/eidw_app?nocache=2024', frequency: '121.100' }
+            { name: 'All Feeds', url: 'https://www.liveatc.net/search/?icao=egll', frequency: 'Multiple', external: true }
         ]
     },
     'EHAM': {
@@ -104,106 +123,25 @@ const AIRPORTS = {
         city: 'Amsterdam, Netherlands',
         region: 'Europe',
         feeds: [
-            { name: 'Tower', url: 'https://s1-bos.liveatc.net/eham_twr?nocache=2024', frequency: '118.400' },
-            { name: 'Approach', url: 'https://s1-bos.liveatc.net/eham_app?nocache=2024', frequency: '121.200' }
-        ]
-    },
-    'EDDF': {
-        name: 'Frankfurt',
-        city: 'Frankfurt, Germany',
-        region: 'Europe',
-        feeds: [
-            { name: 'Tower', url: 'https://s1-bos.liveatc.net/eddf_twr?nocache=2024', frequency: '119.900' },
-            { name: 'Approach', url: 'https://s1-bos.liveatc.net/eddf_app?nocache=2024', frequency: '120.800' }
-        ]
-    },
-    'LEMD': {
-        name: 'Madrid Barajas',
-        city: 'Madrid, Spain',
-        region: 'Europe',
-        feeds: [
-            { name: 'Tower', url: 'https://s1-bos.liveatc.net/lemd_twr?nocache=2024', frequency: '118.300' }
-        ]
-    },
-    'LFPG': {
-        name: 'Paris Charles de Gaulle',
-        city: 'Paris, France',
-        region: 'Europe',
-        feeds: [
-            { name: 'Tower', url: 'https://s1-bos.liveatc.net/lfpg_twr?nocache=2024', frequency: '118.150' }
+            { name: 'All Feeds', url: 'https://www.liveatc.net/search/?icao=eham', frequency: 'Multiple', external: true }
         ]
     },
 
-    // Asia Pacific
-    'RJTT': {
-        name: 'Tokyo Haneda',
-        city: 'Tokyo, Japan',
-        region: 'Asia Pacific',
-        feeds: [
-            { name: 'Tower', url: 'https://s1-nrt.liveatc.net/rjtt_twr?nocache=2024', frequency: '118.100' },
-            { name: 'Approach', url: 'https://s1-nrt.liveatc.net/rjtt_app?nocache=2024', frequency: '119.100' }
-        ]
-    },
-    'YSSY': {
-        name: 'Sydney Kingsford Smith',
-        city: 'Sydney, Australia',
-        region: 'Asia Pacific',
-        feeds: [
-            { name: 'Tower', url: 'https://s1-syd.liveatc.net/yssy_twr?nocache=2024', frequency: '120.500' },
-            { name: 'Approach', url: 'https://s1-syd.liveatc.net/yssy_app?nocache=2024', frequency: '124.400' }
-        ]
-    },
-    'YMML': {
-        name: 'Melbourne',
-        city: 'Melbourne, Australia',
-        region: 'Asia Pacific',
-        feeds: [
-            { name: 'Tower', url: 'https://s1-mel.liveatc.net/ymml_twr?nocache=2024', frequency: '120.500' },
-            { name: 'Approach', url: 'https://s1-mel.liveatc.net/ymml_app?nocache=2024', frequency: '125.600' }
-        ]
-    },
-    'VHHH': {
-        name: 'Hong Kong Intl',
-        city: 'Hong Kong',
-        region: 'Asia Pacific',
-        feeds: [
-            { name: 'Tower', url: 'https://s1-hkg.liveatc.net/vhhh_twr?nocache=2024', frequency: '118.200' }
-        ]
-    },
-    'WSSS': {
-        name: 'Singapore Changi',
-        city: 'Singapore',
-        region: 'Asia Pacific',
-        feeds: [
-            { name: 'Tower', url: 'https://s1-sin.liveatc.net/wsss_twr?nocache=2024', frequency: '118.700' }
-        ]
-    },
-
-    // Middle East
-    'OMDB': {
-        name: 'Dubai Intl',
-        city: 'Dubai, UAE',
-        region: 'Middle East',
-        feeds: [
-            { name: 'Tower', url: 'https://s1-dxb.liveatc.net/omdb_twr?nocache=2024', frequency: '118.750' }
-        ]
-    },
-
-    // Popular US Training Airports
+    // Popular Training Airports
     'KVNY': {
         name: 'Van Nuys',
         city: 'Los Angeles, USA',
         region: 'North America (Training)',
         feeds: [
-            { name: 'Tower', url: 'https://s1-sac.liveatc.net/kvny_twr?nocache=2024', frequency: '118.050' }
+            { name: 'All Feeds', url: 'https://www.liveatc.net/search/?icao=kvny', frequency: '118.050', external: true }
         ]
     },
     'KPAO': {
         name: 'Palo Alto',
-        city: 'San Francisco Bay Area, USA',
+        city: 'San Francisco Bay, USA',
         region: 'North America (Training)',
         feeds: [
-            { name: 'Tower', url: 'https://s1-sac.liveatc.net/kpao_twr?nocache=2024', frequency: '118.600' }
+            { name: 'All Feeds', url: 'https://www.liveatc.net/search/?icao=kpao', frequency: '118.600', external: true }
         ]
     },
     'KSNA': {
@@ -211,8 +149,23 @@ const AIRPORTS = {
         city: 'Orange County, USA',
         region: 'North America (Training)',
         feeds: [
-            { name: 'Tower', url: 'https://s1-sac.liveatc.net/ksna_twr?nocache=2024', frequency: '119.800' },
-            { name: 'Ground', url: 'https://s1-sac.liveatc.net/ksna_gnd?nocache=2024', frequency: '121.800' }
+            { name: 'All Feeds', url: 'https://www.liveatc.net/search/?icao=ksna', frequency: 'Multiple', external: true }
+        ]
+    },
+    'KSDL': {
+        name: 'Scottsdale',
+        city: 'Phoenix, USA',
+        region: 'North America (Training)',
+        feeds: [
+            { name: 'All Feeds', url: 'https://www.liveatc.net/search/?icao=ksdl', frequency: '118.300', external: true }
+        ]
+    },
+    'KAPA': {
+        name: 'Centennial (Denver)',
+        city: 'Denver, USA',
+        region: 'North America (Training)',
+        feeds: [
+            { name: 'All Feeds', url: 'https://www.liveatc.net/search/?icao=kapa', frequency: 'Multiple', external: true }
         ]
     }
 };

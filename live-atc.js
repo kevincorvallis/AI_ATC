@@ -126,21 +126,52 @@ class LiveATCPlayer {
         this.currentAirport = airport;
         this.currentFeed = feed;
 
-        // Update player UI
+        // Check if this is an external link
+        if (feed.external) {
+            // Open LiveATC.net in a new window
+            const width = 1000;
+            const height = 700;
+            const left = (screen.width - width) / 2;
+            const top = (screen.height - height) / 2;
+
+            window.open(
+                feed.url,
+                'liveatc_' + airport.icao,
+                'width=' + width + ',height=' + height + ',left=' + left + ',top=' + top + ',resizable=yes,scrollbars=yes'
+            );
+
+            // Show info message
+            const message = document.createElement('div');
+            message.className = 'external-link-message';
+            message.innerHTML = '<h3>Opening LiveATC.net...</h3><p>A new window has opened with live feeds for <strong>' + airport.name + '</strong>.</p><p>Click on any available feed to start listening!</p><p class="tip">💡 Tip: You can select different frequencies (Tower, Ground, Approach) on the LiveATC.net page.</p>';
+
+            const playerInfo = document.querySelector('.player-info');
+            playerInfo.innerHTML = '';
+            playerInfo.appendChild(message);
+
+            // Hide audio player, show modified UI
+            document.getElementById('atcAudio').style.display = 'none';
+            document.getElementById('airportList').style.display = 'none';
+            document.getElementById('atcPlayer').style.display = 'block';
+            document.querySelector('.atc-controls').style.display = 'none';
+
+            return;
+        }
+
+        // Original audio playback code (for direct streams, if available)
         document.getElementById('playerAirportName').textContent = airport.name + ' (' + airport.icao + ')';
         document.getElementById('playerAirportCity').textContent = airport.city;
         document.getElementById('playerFeedName').textContent = feed.name;
         document.getElementById('playerFrequency').textContent = feed.frequency;
 
-        // Set audio source
         this.audio.src = feed.url;
+        this.audio.style.display = 'block';
         this.audio.load();
         this.audio.play().catch(err => {
             console.error('Playback error:', err);
             this.showError('Unable to start playback. Please try again.');
         });
 
-        // Show player, hide airport list
         document.getElementById('airportList').style.display = 'none';
         document.getElementById('atcPlayer').style.display = 'block';
         document.querySelector('.atc-controls').style.display = 'none';
