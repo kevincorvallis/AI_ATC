@@ -1,0 +1,23 @@
+{
+  "name": "ai-atc-training",
+  "version": "1.0.0",
+  "description": "Interactive AI-powered ATC training system for student pilots",
+  "scripts": {
+    "dev": "cd frontend && python3 -m http.server 8000",
+    "deploy:backend": "cd backend && ./deploy.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/AI_ATC.git"
+  },
+  "keywords": [
+    "atc",
+    "aviation",
+    "training",
+    "pilot",
+    "flight-training",
+    "air-traffic-control"
+  ],
+  "author": "",
+  "license": "MIT"
+}

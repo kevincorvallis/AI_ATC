@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI ATC Training System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>AI ATC Training System</h1>
+            <p class="subtitle">Practice radio communications with AI-powered Air Traffic Control</p>
+        </header>
+
+        <!-- Main Menu -->
+        <div class="main-menu">
+            <div class="menu-cards">
+                <div class="menu-card" id="trainingModeBtn">
+                    <div class="menu-icon">🎙️</div>
+                    <h3>AI Training Mode</h3>
+                    <p>Practice with AI-powered ATC scenarios</p>
+                </div>
+                <div class="menu-card" id="liveAtcModeBtn">
+                    <div class="menu-icon">📻</div>
+                    <h3>Listen to Live ATC</h3>
+                    <p>Tune into real ATC from major airports worldwide</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scenario Selection -->
+        <div class="scenario-selection" style="display: none;">
+            <div class="mode-header">
+                <h2>Select Training Scenario</h2>
+                <button class="btn-secondary" id="backToMainMenu">← Back to Main Menu</button>
+            </div>
+            <div class="scenario-cards">
+                <div class="scenario-card" data-scenario="pattern_work">
+                    <h3>Pattern Work</h3>
+                    <p>Practice departure, downwind, base, and final calls in the traffic pattern</p>
+                    <span class="difficulty">Beginner</span>
+                </div>
+                <div class="scenario-card" data-scenario="ground_operations">
+                    <h3>Ground Operations</h3>
+                    <p>Master taxi clearances, run-up approvals, and ground communication</p>
+                    <span class="difficulty">Beginner</span>
+                </div>
+                <div class="scenario-card" data-scenario="flight_following">
+                    <h3>Flight Following</h3>
+                    <p>Request VFR flight following and practice position reports</p>
+                    <span class="difficulty">Intermediate</span>
+                </div>
+                <div class="scenario-card" data-scenario="emergency">
+                    <h3>Emergency Procedures</h3>
+                    <p>Practice declaring emergencies and handling abnormal situations</p>
+                    <span class="difficulty">Advanced</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live ATC Interface -->
+        <div class="live-atc-interface" id="liveAtcInterface" style="display: none;">
+            <div class="mode-header">
+                <h2>Live ATC Streams</h2>
+                <button class="btn-secondary" id="backToMainMenuFromLive">← Back to Main Menu</button>
+            </div>
+
+            <!-- Search and Filter -->
+            <div class="atc-controls">
+                <input type="text" id="airportSearch" placeholder="Search airports (name, city, or ICAO code)..." class="search-input">
+                <select id="regionFilter" class="region-select">
+                    <option value="all">All Regions</option>
+                    <option value="North America">North America</option>
+                    <option value="North America (Training)">North America - Training Airports</option>
+                    <option value="Europe">Europe</option>
+                    <option value="Asia Pacific">Asia Pacific</option>
+                    <option value="Middle East">Middle East</option>
+                </select>
+            </div>
+
+            <!-- Airport List -->
+            <div class="airport-list" id="airportList">
+                <!-- Populated by JavaScript -->
+            </div>
+
+            <!-- Audio Player -->
+            <div class="atc-player" id="atcPlayer" style="display: none;">
+                <div class="player-info">
+                    <div class="airport-info">
+                        <h3 id="playerAirportName"></h3>
+                        <p id="playerAirportCity"></p>
+                    </div>
+                    <div class="frequency-info">
+                        <span class="freq-label" id="playerFeedName"></span>
+                        <span class="frequency" id="playerFrequency"></span>
+                    </div>
+                </div>
+                <audio id="atcAudio" controls autoplay>
+                    Your browser does not support audio playback.
+                </audio>
+                <div class="player-controls">
+                    <button class="btn-secondary" id="changeAirport">Change Airport</button>
+                    <button class="btn-secondary" id="stopPlayer">Stop</button>
+                </div>
+                <div class="player-tips">
+                    <p>💡 <strong>Listening Tips:</strong> Pay attention to phraseology, readbacks, and controller techniques. Try to anticipate what pilots will say next!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Communication Interface (hidden initially) -->
+        <div class="comm-interface" id="commInterface" style="display: none;">
+            <div class="scenario-info">
+                <h2 id="currentScenarioTitle"></h2>
+                <p id="currentScenarioDesc"></p>
+                <button class="btn-secondary" id="changeScenario">Change Scenario</button>
+            </div>
+
+            <!-- Radio Panel -->
+            <div class="radio-panel">
+                <div class="frequency-display">
+                    <span class="freq-label">COM1</span>
+                    <span class="frequency" id="frequency">118.300</span>
+                </div>
+                <div class="signal-indicator" id="signalIndicator"></div>
+            </div>
+
+            <!-- Conversation Display -->
+            <div class="conversation-container">
+                <div class="conversation" id="conversation">
+                    <div class="message system-message">
+                        <p>Ready for training. Press and hold "Push to Talk" to begin.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls">
+                <button class="ptt-button" id="pttButton">
+                    <span class="ptt-icon">🎙️</span>
+                    <span class="ptt-text">Push to Talk</span>
+                    <span class="ptt-hint">(Hold to speak)</span>
+                </button>
+                <div class="status" id="status">Ready</div>
+            </div>
+
+            <!-- Quick Reference -->
+            <div class="quick-reference">
+                <button class="btn-secondary" id="toggleReference">Show Phraseology Guide</button>
+                <div class="reference-content" id="referenceContent" style="display: none;">
+                    <h3>Quick Phraseology Reference</h3>
+                    <div class="reference-section">
+                        <h4>Pattern Work:</h4>
+                        <ul>
+                            <li>"[Airport] Tower, [Callsign], ready for departure, runway [XX], remaining in the pattern"</li>
+                            <li>"[Airport] Tower, [Callsign], left/right downwind, runway [XX]"</li>
+                            <li>"[Airport] Tower, [Callsign], left/right base, runway [XX], full stop/touch and go"</li>
+                        </ul>
+                    </div>
+                    <div class="reference-section">
+                        <h4>Ground Operations:</h4>
+                        <ul>
+                            <li>"[Airport] Ground, [Callsign], at [location], taxi with information [ATIS letter]"</li>
+                            <li>"[Callsign], taxi to runway [XX] via [taxiways]"</li>
+                        </ul>
+                    </div>
+                    <div class="reference-section">
+                        <h4>General Tips:</h4>
+                        <ul>
+                            <li>Always use your callsign in every transmission</li>
+                            <li>Speak clearly and at a moderate pace</li>
+                            <li>Read back all runway assignments and hold short instructions</li>
+                            <li>Use phonetic alphabet for clarification</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>Practice makes perfect. Fly safe! ✈️</p>
+        </footer>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="airports.js"></script>
+    <script src="app.js"></script>
+    <script src="live-atc.js"></script>
+</body>
+</html>

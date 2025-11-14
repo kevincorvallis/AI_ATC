@@ -1,0 +1,26 @@
+# Backend files (deployed separately to AWS)
+backend/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Development files
+node_modules/
+.DS_Store
+*.log
+
+# Git
+.git/
+.gitignore
+
+# Documentation (optional)
+QUICKSTART.md
+DEPLOYMENT.md
+VERCEL_DEPLOY.md
+NEXT_STEPS.md
+
+# Build artifacts
+*.pyc
+__pycache__/

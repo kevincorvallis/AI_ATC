@@ -60,3 +60,12 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# AI ATC Training System
+.env
+backend/package/
+backend/lambda_package.zip
+backend/trust-policy.json
+__pycache__/
+*.pyc
+.DS_Store
