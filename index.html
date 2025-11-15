@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI ATC Training System</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -23,6 +25,16 @@
                     <h3>AI Training Mode</h3>
                     <p>Practice with AI-powered ATC scenarios</p>
                 </div>
+                <div class="menu-card" id="customModeBtn">
+                    <div class="menu-icon">🎨</div>
+                    <h3>Create Your Own</h3>
+                    <p>Design custom scenarios with natural language</p>
+                </div>
+                <div class="menu-card" id="tutorialModeBtn">
+                    <div class="menu-icon">📚</div>
+                    <h3>Guided Tutorial</h3>
+                    <p>Step-by-step walkthrough of ATC communications</p>
+                </div>
                 <div class="menu-card" id="liveAtcModeBtn">
                     <div class="menu-icon">📻</div>
                     <h3>Listen to Live ATC</h3>
@@ -31,33 +43,47 @@
             </div>
         </div>
 
-        <!-- Scenario Selection -->
+        <!-- Category Selection -->
         <div class="scenario-selection" style="display: none;">
             <div class="mode-header">
-                <h2>Select Training Scenario</h2>
-                <button class="btn-secondary" id="backToMainMenu">← Back to Main Menu</button>
+                <h2>Select Training Category</h2>
+                <div class="header-buttons">
+                    <button class="btn-random" id="randomScenarioBtn">🎲 Random Scenario</button>
+                    <button class="btn-secondary" id="backToMainMenu">← Back to Main Menu</button>
+                </div>
             </div>
             <div class="scenario-cards">
-                <div class="scenario-card" data-scenario="pattern_work">
-                    <h3>Pattern Work</h3>
-                    <p>Practice departure, downwind, base, and final calls in the traffic pattern</p>
-                    <span class="difficulty">Beginner</span>
+                <div class="scenario-card" data-category="pattern_work">
+                    <h3>🛫 Pattern Work</h3>
+                    <p>Practice traffic pattern communications at towered airports</p>
+                    <span class="difficulty">5 Scenarios</span>
                 </div>
-                <div class="scenario-card" data-scenario="ground_operations">
-                    <h3>Ground Operations</h3>
-                    <p>Master taxi clearances, run-up approvals, and ground communication</p>
-                    <span class="difficulty">Beginner</span>
+                <div class="scenario-card" data-category="ground_operations">
+                    <h3>🚖 Ground Operations</h3>
+                    <p>Master taxi clearances and ground communication</p>
+                    <span class="difficulty">5 Scenarios</span>
                 </div>
-                <div class="scenario-card" data-scenario="flight_following">
-                    <h3>Flight Following</h3>
-                    <p>Request VFR flight following and practice position reports</p>
-                    <span class="difficulty">Intermediate</span>
+                <div class="scenario-card" data-category="flight_following">
+                    <h3>📡 Flight Following</h3>
+                    <p>VFR flight following and radar services</p>
+                    <span class="difficulty">5 Scenarios</span>
                 </div>
-                <div class="scenario-card" data-scenario="emergency">
-                    <h3>Emergency Procedures</h3>
-                    <p>Practice declaring emergencies and handling abnormal situations</p>
-                    <span class="difficulty">Advanced</span>
+                <div class="scenario-card" data-category="emergency">
+                    <h3>⚠️ Emergency Procedures</h3>
+                    <p>Practice emergency communications and procedures</p>
+                    <span class="difficulty">5 Scenarios</span>
                 </div>
+            </div>
+        </div>
+
+        <!-- Individual Scenario Selection -->
+        <div class="individual-scenario-selection" id="individualScenarioSelection" style="display: none;">
+            <div class="mode-header">
+                <h2 id="categoryTitle">Select Scenario</h2>
+                <button class="btn-secondary" id="backToCategories">← Back to Categories</button>
+            </div>
+            <div id="individualScenariosContainer" class="individual-scenarios">
+                <!-- Populated by JavaScript -->
             </div>
         </div>
 
@@ -65,7 +91,17 @@
         <div class="live-atc-interface" id="liveAtcInterface" style="display: none;">
             <div class="mode-header">
                 <h2>Live ATC Streams</h2>
-                <button class="btn-secondary" id="backToMainMenuFromLive">← Back to Main Menu</button>
+                <div class="header-buttons">
+                    <button class="btn-random" id="randomAirportBtn">🎲 Random Airport</button>
+                    <button class="btn-secondary" id="toggleMapBtn">🗺️ Show Map</button>
+                    <button class="btn-secondary" id="backToMainMenuFromLive">← Back to Main Menu</button>
+                </div>
+            </div>
+
+            <!-- Airport Map -->
+            <div class="airport-map-container" id="airportMapContainer" style="display: none;">
+                <div id="airportMap"></div>
+                <button class="btn-secondary map-close-btn" id="closeMapBtn">✕ Close Map</button>
             </div>
 
             <!-- Search and Filter -->
@@ -186,8 +222,15 @@
         </footer>
     </div>
 
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <script src="config.js"></script>
+    <script src="scenarios-config.js"></script>
     <script src="airports.js"></script>
+    <script src="map.js"></script>
+    <script src="tutorial.js"></script>
+    <script src="custom-mode.js"></script>
     <script src="app.js"></script>
     <script src="live-atc.js"></script>
 </body>

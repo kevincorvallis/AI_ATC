@@ -76,26 +76,29 @@ Your role is to:
 Help the student pilot practice emergency communications and procedures."""
 }
 
-def get_atc_response(scenario, conversation_history, pilot_message):
+def get_atc_response(scenario, conversation_history, pilot_message, custom_system_prompt=None):
     """
     Generate ATC response using OpenAI GPT-4
     """
     try:
-        # Select scenario prompt
-        system_prompt = SCENARIO_PROMPTS.get(scenario, SCENARIO_PROMPTS["pattern_work"])
-        
+        # Use custom system prompt if provided, otherwise select from predefined scenarios
+        if custom_system_prompt:
+            system_prompt = custom_system_prompt
+        else:
+            system_prompt = SCENARIO_PROMPTS.get(scenario, SCENARIO_PROMPTS["pattern_work"])
+
         # Build messages for OpenAI
         messages = [
             {"role": "system", "content": system_prompt}
         ]
-        
+
         # Add conversation history
         for msg in conversation_history:
             messages.append(msg)
-        
+
         # Add current pilot message
         messages.append({"role": "user", "content": f"Pilot: {pilot_message}"})
-        
+
         # Call OpenAI API
         response = client.chat.completions.create(
             model="gpt-4",
@@ -103,19 +106,19 @@ def get_atc_response(scenario, conversation_history, pilot_message):
             max_tokens=200,
             temperature=0.7
         )
-        
+
         atc_response = response.choices[0].message.content
-        
+
         # Check if response includes feedback
-        has_feedback = any(word in atc_response.lower() for word in 
+        has_feedback = any(word in atc_response.lower() for word in
                           ['should', 'instead', 'correct', 'better', 'try', 'remember'])
-        
+
         return {
             'success': True,
             'atc_response': atc_response,
             'has_feedback': has_feedback
         }
-        
+
     except Exception as e:
         print(f"Error calling OpenAI API: {str(e)}")
         return {
@@ -131,11 +134,12 @@ def lambda_handler(event, context):
     try:
         # Parse request body
         body = json.loads(event.get('body', '{}'))
-        
+
         scenario = body.get('scenario', 'pattern_work')
         pilot_message = body.get('message', '')
         conversation_history = body.get('history', [])
-        
+        custom_system_prompt = body.get('customSystemPrompt', None)  # Support for custom scenarios
+
         # Validate input
         if not pilot_message:
             return {
@@ -151,9 +155,9 @@ def lambda_handler(event, context):
                     'error': 'No message provided'
                 })
             }
-        
-        # Get ATC response
-        result = get_atc_response(scenario, conversation_history, pilot_message)
+
+        # Get ATC response (with optional custom system prompt)
+        result = get_atc_response(scenario, conversation_history, pilot_message, custom_system_prompt)
         
         # Return response
         return {
