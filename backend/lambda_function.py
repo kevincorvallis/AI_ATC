@@ -183,35 +183,44 @@ def generate_custom_scenario(user_prompt):
         system_prompt = """You are an expert ATC scenario designer. Given a user's natural language description of a flight scenario,
 extract and generate detailed, realistic scenario parameters.
 
-Return a JSON object with the following structure:
+Return a JSON object with the following structure (use these EXACT field names):
 {
-    "airport": "ICAO code (e.g., KSBN)",
-    "airport_name": "Full airport name",
-    "aircraft_type": "Aircraft type (default: Cessna 172)",
-    "callsign": "Realistic callsign (e.g., N12345 or Skyhawk 234)",
+    "airport": "ICAO code only (e.g., KSBN)",
+    "airport_name": "Full airport name (e.g., South Bend Regional Airport)",
+    "aircraft_type": "Aircraft type (e.g., Cessna 172)",
+    "callsign": "Realistic callsign matching the user's prompt if provided (e.g., Skyhawk 4378Q, N12345)",
     "scenario_type": "arrival|departure|enroute|practice_area|emergency|ground",
-    "altitude": "Altitude in feet (if applicable)",
-    "weather": "Weather conditions (default: VFR)",
-    "wind": "Wind (e.g., 270 at 8 kts)",
-    "runway": "Active runway (e.g., 27)",
-    "squawk": "Transponder code (1200-7700)",
-    "atis": "ATIS letter (A-Z)",
-    "souls_on_board": "Number (1-4)",
-    "fuel_remaining": "Hours+Minutes (e.g., 3+45)",
+    "altitude": "Altitude string without 'feet' (e.g., 3000)",
+    "weather": "Weather conditions (e.g., VFR, clear skies)",
+    "wind": "Wind in ATC format (e.g., 270 at 8 kts)",
+    "runway": "Active runway number only (e.g., 27)",
+    "squawk": "4-digit transponder code (1200-7700)",
+    "atis": "Single ATIS letter only (e.g., K)",
+    "souls_on_board": "Number only (1-4)",
+    "fuel_remaining": "Format as H+MM (e.g., 3+45)",
+    "tower": "Tower frequency (e.g., 118.300)",
+    "ground": "Ground frequency (e.g., 121.900)",
+    "departure": "Departure frequency (e.g., 121.700)",
     "scenario_description": "Enhanced 2-3 sentence description of the scenario",
-    "initial_call_example": "Example of what the pilot should say first",
-    "system_prompt": "Detailed system prompt for the ATC controller AI"
+    "initial_call_example": "Exact radio call the pilot should make first (without quotes)",
+    "system_prompt": "Detailed conversational system prompt for the ATC controller AI"
 }
 
-Be realistic and aviation-accurate. Fill in missing details intelligently."""
+Be realistic and aviation-accurate. Fill in missing details intelligently.
+
+IMPORTANT:
+- If the user mentions a callsign (e.g., "Skyhawk 4378Q"), use EXACTLY that callsign
+- If the user mentions a direction (north, south, east, west), note it in the description
+- If the user mentions an airport name, find its ICAO code
+- Extract all details from the user's prompt - don't ignore what they tell you!"""
 
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Generate a detailed scenario for: {user_prompt}"}
+                {"role": "user", "content": f"User's scenario request: {user_prompt}"}
             ],
-            max_tokens=1000,
+            max_tokens=1200,
             temperature=0.7,
             response_format={"type": "json_object"}
         )

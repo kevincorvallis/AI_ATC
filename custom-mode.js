@@ -670,7 +670,10 @@ Respond as a controller would in this situation.`
 
         document.getElementById('currentScenarioTitle').textContent = '🎨 Custom Scenario';
         document.getElementById('currentScenarioDesc').textContent = userPrompt;
-        document.getElementById('frequency').textContent = flightDetails.frequency;
+
+        // Set frequency from either AI or local data
+        const frequency = parsedData.tower || flightDetails.frequency || '118.300';
+        document.getElementById('frequency').textContent = frequency;
 
         // Create detailed scenario briefing
         const scenarioBrief = this.createScenarioBrief(parsedData, flightDetails, userPrompt);
@@ -684,15 +687,40 @@ Respond as a controller would in this situation.`
 
     createScenarioBrief(parsedData, flightDetails, userPrompt) {
         // Handle both AI-generated and locally-parsed data
-        const callsign = flightDetails.callsign || parsedData.callsign || 'N12345';
+        // AI returns: callsign, squawk, souls_on_board, fuel_remaining
+        // Local returns: callsign in flightDetails
+
+        const callsign = parsedData.callsign || flightDetails.callsign || 'N12345';
         const aircraftType = parsedData.aircraft_type || 'Cessna 172';
-        const squawk = flightDetails.squawk || parsedData.squawk || '1200';
-        const soulsOnBoard = flightDetails.souls_on_board || parsedData.souls_on_board || 1;
-        const fuelRemaining = flightDetails.fuel_remaining || parsedData.fuel_remaining ||
-                              `${flightDetails.fuel_hours || 3}+${(flightDetails.fuel_minutes || 0).toString().padStart(2, '0')}`;
+        const squawk = parsedData.squawk || flightDetails.squawk || '1200';
+        const soulsOnBoard = parsedData.souls_on_board || flightDetails.souls_on_board || 1;
+
+        // Handle fuel format from both sources
+        let fuelRemaining;
+        if (parsedData.fuel_remaining) {
+            fuelRemaining = parsedData.fuel_remaining; // AI format: "3+45"
+        } else if (flightDetails.fuel_hours !== undefined) {
+            fuelRemaining = `${flightDetails.fuel_hours}+${(flightDetails.fuel_minutes || 0).toString().padStart(2, '0')}`;
+        } else {
+            fuelRemaining = '3+00';
+        }
+
+        // Airport info
+        const airport = parsedData.airport || flightDetails.airport || null;
+        const airportName = parsedData.airport_name || parsedData.airport || 'Unknown Airport';
+        const tower = parsedData.tower || flightDetails.frequency || '118.300';
+        const ground = parsedData.ground || flightDetails.ground_freq || '121.900';
+        const departure = parsedData.departure || flightDetails.departure_freq || '121.700';
+        const atis = parsedData.atis || flightDetails.atis || 'A';
+        const runway = parsedData.runway || flightDetails.runway || '27';
+
+        // Weather & conditions
+        const weather = parsedData.weather || 'VFR';
+        const wind = parsedData.wind || '270 at 8 kts';
+        const altitude = parsedData.altitude || null;
 
         const scenarioDescription = parsedData.scenario_description || userPrompt;
-        const clearanceSection = this.generateClearanceInfo(parsedData, flightDetails);
+        const clearanceSection = this.generateClearanceInfo(parsedData, { callsign, runway, atis });
 
         return `
             <div class="message system-message scenario-briefing">
@@ -733,33 +761,33 @@ Respond as a controller would in this situation.`
                     </div>
                 </div>
 
-                ${parsedData.airport ? `
+                ${airport ? `
                 <div class="briefing-section">
                     <h4>🏢 Airport Information</h4>
                     <div class="info-grid">
                         <div class="info-item">
                             <span class="info-label">Airport:</span>
-                            <span class="info-value"><strong>${parsedData.airport_name || parsedData.airport}</strong></span>
+                            <span class="info-value"><strong>${airportName}</strong></span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Tower:</span>
-                            <span class="info-value">${flightDetails.frequency}</span>
+                            <span class="info-value">${tower}</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Ground:</span>
-                            <span class="info-value">${flightDetails.ground_freq}</span>
+                            <span class="info-value">${ground}</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Departure:</span>
-                            <span class="info-value">${flightDetails.departure_freq}</span>
+                            <span class="info-value">${departure}</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">ATIS:</span>
-                            <span class="info-value">Information ${flightDetails.atis}</span>
+                            <span class="info-value">Information ${atis}</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Active Runway:</span>
-                            <span class="info-value">${flightDetails.runway}</span>
+                            <span class="info-value">${runway}</span>
                         </div>
                     </div>
                 </div>
@@ -770,16 +798,16 @@ Respond as a controller would in this situation.`
                     <div class="info-grid">
                         <div class="info-item">
                             <span class="info-label">Conditions:</span>
-                            <span class="info-value">${parsedData.weather}</span>
+                            <span class="info-value">${weather}</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Wind:</span>
-                            <span class="info-value">${parsedData.wind}</span>
+                            <span class="info-value">${wind}</span>
                         </div>
-                        ${parsedData.altitude ? `
+                        ${altitude ? `
                         <div class="info-item">
                             <span class="info-label">Altitude:</span>
-                            <span class="info-value">${parsedData.altitude} feet</span>
+                            <span class="info-value">${altitude} feet</span>
                         </div>
                         ` : ''}
                     </div>
@@ -790,7 +818,7 @@ Respond as a controller would in this situation.`
                 <div class="briefing-footer">
                     <p><strong>Ready to begin?</strong></p>
                     <p>Press and hold <strong>"Push to Talk"</strong> or the <strong>Spacebar</strong> to start your radio transmission.</p>
-                    ${parsedData.airport ? `<p class="diagram-hint">💡 Scroll down to view the airport diagram for ${parsedData.airport}</p>` : ''}
+                    ${airport ? `<p class="diagram-hint">💡 Scroll down to view the airport diagram for ${airport}</p>` : ''}
                 </div>
             </div>
         `;
