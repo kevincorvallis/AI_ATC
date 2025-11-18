@@ -7,38 +7,136 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <!-- Google Fonts - Aviation themed -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="aviation-theme.css">
 </head>
 <body>
+    <!-- Radar Background Animation -->
+    <div class="radar-bg">
+        <div class="radar-sweep"></div>
+        <div class="radar-grid"></div>
+    </div>
+
     <div class="container">
+        <!-- Navigation Bar -->
+        <nav class="nav-bar">
+            <div class="nav-left">
+                <button class="nav-btn back-btn" id="backButton" style="display: none;">
+                    <span class="nav-icon">←</span>
+                    <span>Back</span>
+                </button>
+                <div class="breadcrumbs" id="breadcrumbs">
+                    <span class="breadcrumb-item active">Home</span>
+                </div>
+            </div>
+            <div class="nav-right">
+                <button class="nav-btn home-btn" id="homeButton">
+                    <span class="nav-icon">⌂</span>
+                    <span>Home</span>
+                </button>
+            </div>
+        </nav>
+
         <!-- Header -->
-        <header>
-            <h1>AI ATC Training System</h1>
-            <p class="subtitle">Practice radio communications with AI-powered Air Traffic Control</p>
+        <header class="animate__animated animate__fadeInDown">
+            <div class="header-indicator"></div>
+            <h1>
+                <span class="header-code">ATC-SIM</span>
+                <span class="header-title">Air Traffic Control Training System</span>
+            </h1>
+            <p class="subtitle">
+                <span class="status-dot"></span>
+                Real-time simulation | AI-powered voice training | Live ATC monitoring
+            </p>
         </header>
 
         <!-- Main Menu -->
         <div class="main-menu">
+            <div class="menu-section-header animate__animated animate__fadeInUp">
+                <h2>SELECT TRAINING MODE</h2>
+                <div class="section-indicator"></div>
+            </div>
+
             <div class="menu-cards">
-                <div class="menu-card" id="trainingModeBtn">
-                    <div class="menu-icon">🎙️</div>
+                <div class="menu-card animate__animated animate__fadeInUp" id="trainingModeBtn" style="animation-delay: 0.1s">
+                    <div class="card-header">
+                        <div class="card-indicator"></div>
+                        <span class="card-code">TRN-01</span>
+                    </div>
+                    <div class="menu-icon-wrapper">
+                        <div class="menu-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M8 12h8M12 8v8"></path>
+                            </svg>
+                        </div>
+                    </div>
                     <h3>AI Training Mode</h3>
-                    <p>Practice with AI-powered ATC scenarios</p>
+                    <p>Interactive voice communication practice with AI-powered air traffic control</p>
+                    <div class="card-status">ACTIVE</div>
                 </div>
-                <div class="menu-card" id="customModeBtn">
-                    <div class="menu-icon">🎨</div>
-                    <h3>Create Your Own</h3>
-                    <p>Design custom scenarios with natural language</p>
+
+                <div class="menu-card animate__animated animate__fadeInUp" id="customModeBtn" style="animation-delay: 0.2s">
+                    <div class="card-header">
+                        <div class="card-indicator"></div>
+                        <span class="card-code">CST-02</span>
+                    </div>
+                    <div class="menu-icon-wrapper">
+                        <div class="menu-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                                <path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <h3>Custom Scenario Builder</h3>
+                    <p>Design personalized training scenarios using natural language input</p>
+                    <div class="card-status">ACTIVE</div>
                 </div>
-                <div class="menu-card" id="tutorialModeBtn">
-                    <div class="menu-icon">📚</div>
+
+                <div class="menu-card animate__animated animate__fadeInUp" id="tutorialModeBtn" style="animation-delay: 0.3s">
+                    <div class="card-header">
+                        <div class="card-indicator"></div>
+                        <span class="card-code">GDE-03</span>
+                    </div>
+                    <div class="menu-icon-wrapper">
+                        <div class="menu-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                            </svg>
+                        </div>
+                    </div>
                     <h3>Guided Tutorial</h3>
-                    <p>Step-by-step walkthrough of ATC communications</p>
+                    <p>Comprehensive step-by-step walkthrough of ATC radio procedures</p>
+                    <div class="card-status">ACTIVE</div>
                 </div>
-                <div class="menu-card" id="liveAtcModeBtn">
-                    <div class="menu-icon">📻</div>
-                    <h3>Listen to Live ATC</h3>
-                    <p>Tune into real ATC from major airports worldwide</p>
+
+                <div class="menu-card animate__animated animate__fadeInUp" id="liveAtcModeBtn" style="animation-delay: 0.4s">
+                    <div class="card-header">
+                        <div class="card-indicator"></div>
+                        <span class="card-code">LIV-04</span>
+                    </div>
+                    <div class="menu-icon-wrapper">
+                        <div class="menu-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="2"></circle>
+                                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <h3>Live ATC Monitor</h3>
+                    <p>Real-time audio streaming from airports worldwide with frequency scanner</p>
+                    <div class="card-status status-live">
+                        <span class="live-pulse"></span>
+                        LIVE
+                    </div>
                 </div>
             </div>
         </div>
@@ -231,6 +329,7 @@
     <script src="map.js"></script>
     <script src="tutorial.js"></script>
     <script src="custom-mode.js"></script>
+    <script src="navigation.js"></script>
     <script src="app.js"></script>
     <script src="live-atc.js"></script>
 </body>

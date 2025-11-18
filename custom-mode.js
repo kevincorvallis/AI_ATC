@@ -196,16 +196,68 @@ Respond as a controller would in this situation.`
         ];
     }
 
+    generateCallsign() {
+        // Generate realistic GA callsigns
+        const types = ['N', 'Skyhawk', 'Skylane', 'Cherokee', 'Warrior'];
+        const prefixes = ['November', 'N'];
+
+        if (Math.random() > 0.3) {
+            // N-number format: N12345
+            const numbers = Math.floor(Math.random() * 90000) + 10000;
+            const letter = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+            return `N${numbers}${letter}`;
+        } else {
+            // Type + number: Skyhawk 234
+            const type = types[Math.floor(Math.random() * types.length)];
+            const num = Math.floor(Math.random() * 900) + 100;
+            return `${type} ${num}`;
+        }
+    }
+
+    generateFlightDetails(parsedData) {
+        const callsign = this.generateCallsign();
+        const squawk = 1200 + Math.floor(Math.random() * 6700); // VFR squawk codes
+        const runway = parsedData.runway || this.getRunwayFromWind(parsedData.wind);
+
+        const details = {
+            callsign: callsign,
+            squawk: squawk.toString().padStart(4, '0'),
+            runway: runway,
+            frequency: '118.300',
+            departure_freq: '121.700',
+            ground_freq: '121.900',
+            atis: String.fromCharCode(65 + Math.floor(Math.random() * 26)), // Random ATIS letter
+            souls_on_board: Math.floor(Math.random() * 3) + 1,
+            fuel_hours: Math.floor(Math.random() * 2) + 3,
+            fuel_minutes: Math.floor(Math.random() * 60)
+        };
+
+        return details;
+    }
+
+    getRunwayFromWind(wind) {
+        // Simple runway selection based on wind
+        const windMatch = wind.match(/(\d{3})/);
+        if (windMatch) {
+            const windDir = parseInt(windMatch[1]);
+            const runway = Math.round(windDir / 10);
+            return runway.toString().padStart(2, '0');
+        }
+        return '27'; // Default
+    }
+
     parseCustomPrompt(userPrompt) {
         // Parse the user's natural language prompt and extract key information
         const prompt = userPrompt.toLowerCase();
         const parsed = {
             airport: null,
+            airport_name: null,
             aircraft_type: "Cessna 172", // Default
             scenario_type: null,
             altitude: null,
             weather: "VFR", // Default
             wind: "270 at 8 kts", // Default
+            runway: null,
             custom_details: userPrompt
         };
 
@@ -244,9 +296,19 @@ Respond as a controller would in this situation.`
 
         for (const [name, fullName] of Object.entries(airportNames)) {
             if (prompt.includes(name)) {
-                parsed.airport = fullName;
+                parsed.airport_name = fullName;
+                // Extract ICAO code from fullName
+                const icaoExtract = fullName.match(/\(([A-Z]{4})\)/);
+                if (icaoExtract) {
+                    parsed.airport = icaoExtract[1];
+                }
                 break;
             }
+        }
+
+        // If we have ICAO but no name, use just the ICAO
+        if (parsed.airport && !parsed.airport_name) {
+            parsed.airport_name = parsed.airport;
         }
 
         // Extract altitude (look for numbers followed by "feet", "ft", or just numbers between 1000-18000)
@@ -283,19 +345,20 @@ Respond as a controller would in this situation.`
         return parsed;
     }
 
-    generateSystemPrompt(parsedData) {
+    generateSystemPrompt(parsedData, flightDetails) {
         const template = this.templates[parsedData.scenario_type] || this.templates.custom;
         let prompt = template.template;
 
-        // Replace placeholders with parsed data
+        // Replace placeholders with parsed data and flight details
         const replacements = {
-            airport: parsedData.airport || "a towered airport",
+            airport: parsedData.airport_name || parsedData.airport || "a towered airport",
+            callsign: flightDetails.callsign,
             aircraft_type: parsedData.aircraft_type || "Cessna 172",
             direction: parsedData.direction || "the north",
             altitude: parsedData.altitude || "3,000",
             weather: parsedData.weather || "VFR, clear skies",
             wind: parsedData.wind || "270 at 8 kts",
-            runway: parsedData.runway || "27",
+            runway: flightDetails.runway,
             intentions: parsedData.intentions || "remain in the pattern",
             traffic_level: parsedData.traffic_level || "light",
             origin: parsedData.origin || "their departure airport",
@@ -303,12 +366,17 @@ Respond as a controller would in this situation.`
             visibility: parsedData.visibility || "10+ miles",
             maneuvers: parsedData.maneuvers || "various maneuvers",
             area_name: parsedData.area_name || "the designated practice area",
-            custom_scenario: parsedData.custom_details || "Handle the pilot's request professionally"
+            custom_scenario: parsedData.custom_details || "Handle the pilot's request professionally",
+            squawk: flightDetails.squawk,
+            atis: flightDetails.atis
         };
 
         for (const [key, value] of Object.entries(replacements)) {
             prompt = prompt.replace(new RegExp(`{${key}}`, 'g'), value);
         }
+
+        // Add flight details to the prompt
+        prompt += `\n\nThe pilot is flying ${flightDetails.callsign}, squawking ${flightDetails.squawk}. Current ATIS is information ${flightDetails.atis}. Use the callsign naturally in your responses.`;
 
         return prompt;
     }
@@ -331,6 +399,18 @@ Respond as a controller would in this situation.`
 
         // Populate examples
         this.populateExamples();
+
+        // Load pending airport diagram if available
+        if (this.pendingAirportDiagram) {
+            setTimeout(() => {
+                const searchInput = document.getElementById('airportDiagramSearch');
+                if (searchInput) {
+                    searchInput.value = this.pendingAirportDiagram;
+                    this.loadAirportDiagram();
+                    this.pendingAirportDiagram = null; // Clear after loading
+                }
+            }, 100);
+        }
     }
 
     createCustomModeInterface() {
@@ -483,16 +563,23 @@ Respond as a controller would in this situation.`
         // Parse the user's prompt
         const parsedData = this.parseCustomPrompt(userPrompt);
 
+        // Generate flight details
+        const flightDetails = this.generateFlightDetails(parsedData);
+
         // Generate system prompt
-        const systemPrompt = this.generateSystemPrompt(parsedData);
+        const systemPrompt = this.generateSystemPrompt(parsedData, flightDetails);
 
         // Store custom scenario data
         this.currentCustomScenario = {
             userPrompt: userPrompt,
             parsedData: parsedData,
+            flightDetails: flightDetails,
             systemPrompt: systemPrompt,
             conversationHistory: []
         };
+
+        // Store airport code for later diagram loading
+        this.pendingAirportDiagram = parsedData.airport || null;
 
         // Start the scenario using the app's existing infrastructure
         this.app.currentCategory = 'custom';
@@ -506,40 +593,188 @@ Respond as a controller would in this situation.`
 
         document.getElementById('currentScenarioTitle').textContent = '🎨 Custom Scenario';
         document.getElementById('currentScenarioDesc').textContent = userPrompt;
-        document.getElementById('frequency').textContent = '118.300';
+        document.getElementById('frequency').textContent = flightDetails.frequency;
 
-        // Clear conversation
+        // Create detailed scenario briefing
+        const scenarioBrief = this.createScenarioBrief(parsedData, flightDetails, userPrompt);
+
+        // Clear conversation and show briefing
         const conversation = document.getElementById('conversation');
-        conversation.innerHTML = `
-            <div class="message system-message">
-                <p><strong>Custom Scenario Started</strong></p>
-                <p>${userPrompt}</p>
-                <p style="margin-top: 12px;">Press and hold "Push to Talk" or spacebar to begin communication.</p>
-            </div>
-        `;
+        conversation.innerHTML = scenarioBrief;
 
         this.app.updateStatus('Ready');
     }
 
+    createScenarioBrief(parsedData, flightDetails, userPrompt) {
+        const clearanceSection = this.generateClearanceInfo(parsedData, flightDetails);
+
+        return `
+            <div class="message system-message scenario-briefing">
+                <div class="briefing-header">
+                    <h3>📋 Scenario Briefing</h3>
+                    <p class="scenario-description">${userPrompt}</p>
+                </div>
+
+                <div class="briefing-section">
+                    <h4>✈️ Your Aircraft</h4>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Callsign:</span>
+                            <span class="info-value"><strong>${flightDetails.callsign}</strong></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Aircraft Type:</span>
+                            <span class="info-value">${parsedData.aircraft_type}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Squawk:</span>
+                            <span class="info-value">${flightDetails.squawk}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Souls on Board:</span>
+                            <span class="info-value">${flightDetails.souls_on_board}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Fuel Remaining:</span>
+                            <span class="info-value">${flightDetails.fuel_hours}+${flightDetails.fuel_minutes.toString().padStart(2, '0')}</span>
+                        </div>
+                    </div>
+                </div>
+
+                ${parsedData.airport ? `
+                <div class="briefing-section">
+                    <h4>🏢 Airport Information</h4>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Airport:</span>
+                            <span class="info-value"><strong>${parsedData.airport_name || parsedData.airport}</strong></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Tower:</span>
+                            <span class="info-value">${flightDetails.frequency}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Ground:</span>
+                            <span class="info-value">${flightDetails.ground_freq}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Departure:</span>
+                            <span class="info-value">${flightDetails.departure_freq}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">ATIS:</span>
+                            <span class="info-value">Information ${flightDetails.atis}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Active Runway:</span>
+                            <span class="info-value">${flightDetails.runway}</span>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+
+                <div class="briefing-section">
+                    <h4>🌤️ Weather & Conditions</h4>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Conditions:</span>
+                            <span class="info-value">${parsedData.weather}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Wind:</span>
+                            <span class="info-value">${parsedData.wind}</span>
+                        </div>
+                        ${parsedData.altitude ? `
+                        <div class="info-item">
+                            <span class="info-label">Altitude:</span>
+                            <span class="info-value">${parsedData.altitude} feet</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+
+                ${clearanceSection}
+
+                <div class="briefing-footer">
+                    <p><strong>Ready to begin?</strong></p>
+                    <p>Press and hold <strong>"Push to Talk"</strong> or the <strong>Spacebar</strong> to start your radio transmission.</p>
+                    ${parsedData.airport ? `<p class="diagram-hint">💡 Scroll down to view the airport diagram for ${parsedData.airport}</p>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    generateClearanceInfo(parsedData, flightDetails) {
+        if (!parsedData.scenario_type) return '';
+
+        let clearanceText = '';
+        let exampleCall = '';
+
+        switch (parsedData.scenario_type) {
+            case 'departure':
+                clearanceText = 'Clearance for Departure';
+                exampleCall = `"${parsedData.airport_name || 'Tower'}, ${flightDetails.callsign}, ready for departure, runway ${flightDetails.runway}."`;
+                break;
+            case 'arrival':
+                clearanceText = 'Expected Arrival Instructions';
+                exampleCall = `"${parsedData.airport_name || 'Tower'}, ${flightDetails.callsign}, ${parsedData.altitude || '3,000'}, inbound for landing with information ${flightDetails.atis}."`;
+                break;
+            case 'enroute':
+                clearanceText = 'Flight Following Request';
+                exampleCall = `"[Center], ${flightDetails.callsign}, VFR, requesting flight following."`;
+                break;
+            case 'practice_area':
+                clearanceText = 'Practice Area Operations';
+                exampleCall = `"${parsedData.airport_name || 'Tower'}, ${flightDetails.callsign}, maneuvering in the practice area at ${parsedData.altitude || '3,500'} feet."`;
+                break;
+            default:
+                return '';
+        }
+
+        return `
+            <div class="briefing-section clearance-section">
+                <h4>📡 ${clearanceText}</h4>
+                <div class="example-call">
+                    <p class="example-label">Example initial call:</p>
+                    <p class="example-text">${exampleCall}</p>
+                </div>
+            </div>
+        `;
+    }
+
     getCurrentAIRACCycle() {
-        // AIRAC cycles start on specific dates and repeat every 28 days
-        // Reference: Cycle 2501 starts January 2, 2025
-        const airacStart = new Date('2025-01-02');
+        // AIRAC cycles with official effective dates for 2025
+        const airacCycles = [
+            { cycle: 2501, effectiveDate: new Date('2025-01-23') },
+            { cycle: 2502, effectiveDate: new Date('2025-02-20') },
+            { cycle: 2503, effectiveDate: new Date('2025-03-20') },
+            { cycle: 2504, effectiveDate: new Date('2025-04-17') },
+            { cycle: 2505, effectiveDate: new Date('2025-05-15') },
+            { cycle: 2506, effectiveDate: new Date('2025-06-12') },
+            { cycle: 2507, effectiveDate: new Date('2025-07-10') },
+            { cycle: 2508, effectiveDate: new Date('2025-08-07') },
+            { cycle: 2509, effectiveDate: new Date('2025-09-04') },
+            { cycle: 2510, effectiveDate: new Date('2025-10-02') },
+            { cycle: 2511, effectiveDate: new Date('2025-10-30') },
+            { cycle: 2512, effectiveDate: new Date('2025-11-27') },
+            { cycle: 2513, effectiveDate: new Date('2025-12-25') }
+        ];
+
         const now = new Date();
 
-        // Calculate days since the reference AIRAC cycle
-        const daysSinceStart = Math.floor((now - airacStart) / (1000 * 60 * 60 * 24));
-
-        // Calculate which cycle we're in (each cycle is 28 days)
-        const cyclesSinceStart = Math.floor(daysSinceStart / 28);
-
-        // Cycle 2501 is the first cycle of 2025, so add the cycles to that
-        const currentCycle = 2501 + cyclesSinceStart;
+        // Find the most recent effective cycle
+        let currentCycle = 2511; // Default fallback
+        for (let i = airacCycles.length - 1; i >= 0; i--) {
+            if (now >= airacCycles[i].effectiveDate) {
+                currentCycle = airacCycles[i].cycle;
+                break;
+            }
+        }
 
         return currentCycle.toString();
     }
 
-    loadAirportDiagram() {
+    loadAirportDiagram(cycleOverride = null) {
         const searchInput = document.getElementById('airportDiagramSearch');
         const icao = searchInput.value.trim().toUpperCase();
 
@@ -554,11 +789,13 @@ Respond as a controller would in this situation.`
         const viewer = document.getElementById('airportDiagramViewer');
         viewer.innerHTML = '<p class="loading">Loading airport diagram...</p>';
 
-        // Automatically calculate current AIRAC cycle
-        const currentCycle = this.getCurrentAIRACCycle();
+        // Automatically calculate current AIRAC cycle or use override
+        const currentCycle = cycleOverride || this.getCurrentAIRACCycle();
 
-        // Try current cycle and adjacent cycles as fallbacks
-        const cycles = [currentCycle, (parseInt(currentCycle) - 1).toString(), (parseInt(currentCycle) + 1).toString()];
+        // Prepare fallback cycles
+        const prevCycle = (parseInt(currentCycle) - 1).toString();
+        const nextCycle = (parseInt(currentCycle) + 1).toString();
+
         const diagramUrl = `https://aeronav.faa.gov/d-tpp/${currentCycle}/00000AD.PDF#nameddest=${icao}`;
 
         viewer.innerHTML = `
@@ -572,13 +809,21 @@ Respond as a controller would in this situation.`
                 src="${diagramUrl}"
                 class="diagram-iframe"
                 title="Airport Diagram for ${icao}"
-                onload="this.style.opacity = 1;"
-                onerror="this.parentElement.querySelector('.diagram-error').style.display = 'block'; this.style.display = 'none';"
+                onload="this.style.opacity = 1; this.dataset.loaded = 'true';"
+                onerror="if (!this.dataset.retried) { this.dataset.retried = 'true'; } else { this.parentElement.querySelector('.diagram-error').style.display = 'block'; this.style.display = 'none'; }"
             ></iframe>
             <div class="diagram-error" style="display: none; padding: 20px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin-top: 10px;">
                 <p><strong>⚠ Diagram failed to load</strong></p>
-                <p>The diagram for <strong>${icao}</strong> may not be available in the current AIRAC cycle (${currentCycle}).</p>
-                <p>Try these alternatives:</p>
+                <p>The diagram for <strong>${icao}</strong> may not be available in AIRAC cycle ${currentCycle}.</p>
+                <p>Try these cycle alternatives:</p>
+                <div style="margin: 12px 0;">
+                    <button class="btn-secondary" onclick="customMode.loadAirportDiagram('${prevCycle}')" style="margin: 4px;">
+                        Try Cycle ${prevCycle}
+                    </button>
+                    <button class="btn-secondary" onclick="customMode.loadAirportDiagram('${nextCycle}')" style="margin: 4px;">
+                        Try Cycle ${nextCycle}
+                    </button>
+                </div>
             </div>
             <div class="diagram-fallback">
                 <p class="fallback-header">Alternative diagram sources:</p>

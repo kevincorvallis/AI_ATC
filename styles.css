@@ -1716,3 +1716,124 @@ footer {
     40% { content: '..'; }
     60%, 100% { content: '...'; }
 }
+
+/* Scenario Briefing Styles */
+.scenario-briefing {
+    background: linear-gradient(135deg, #1a1d2e 0%, #252a3d 100%);
+    border: 2px solid var(--primary-color);
+    padding: 24px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.briefing-header {
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+}
+
+.briefing-header h3 {
+    color: var(--primary-color);
+    margin: 0 0 12px 0;
+    font-size: 1.5rem;
+}
+
+.scenario-description {
+    color: var(--text-color);
+    font-size: 1.1rem;
+    font-style: italic;
+    margin: 0;
+}
+
+.briefing-section {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    border-left: 4px solid var(--accent-color);
+}
+
+.briefing-section h4 {
+    color: var(--accent-color);
+    margin: 0 0 12px 0;
+    font-size: 1.1rem;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info-label {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.info-value {
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.info-value strong {
+    color: var(--primary-color);
+    font-size: 1.1rem;
+}
+
+.clearance-section {
+    background: rgba(37, 99, 235, 0.1);
+    border-left-color: var(--primary-color);
+}
+
+.example-call {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px;
+    border-radius: 6px;
+    border-left: 3px solid var(--primary-color);
+}
+
+.example-label {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin: 0 0 8px 0;
+}
+
+.example-text {
+    color: var(--text-color);
+    font-size: 1.05rem;
+    font-family: 'Courier New', monospace;
+    margin: 0;
+    line-height: 1.6;
+}
+
+.briefing-footer {
+    background: rgba(37, 99, 235, 0.15);
+    padding: 16px;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid var(--primary-color);
+}
+
+.briefing-footer p {
+    margin: 8px 0;
+    color: var(--text-color);
+}
+
+.briefing-footer strong {
+    color: var(--primary-color);
+}
+
+.diagram-hint {
+    color: var(--accent-color);
+    font-style: italic;
+    font-size: 0.95rem;
+}
