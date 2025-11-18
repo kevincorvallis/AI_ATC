@@ -551,7 +551,7 @@ Respond as a controller would in this situation.`
         }
     }
 
-    startCustomScenario() {
+    async startCustomScenario() {
         const promptInput = document.getElementById('customPrompt');
         const userPrompt = promptInput.value.trim();
 
@@ -560,14 +560,91 @@ Respond as a controller would in this situation.`
             return;
         }
 
-        // Parse the user's prompt
-        const parsedData = this.parseCustomPrompt(userPrompt);
+        // Show loading state
+        const startButton = document.getElementById('startCustomScenario');
+        const originalButtonText = startButton.textContent;
+        startButton.disabled = true;
+        startButton.textContent = 'Generating Scenario...';
+        startButton.classList.add('loading');
 
-        // Generate flight details
-        const flightDetails = this.generateFlightDetails(parsedData);
+        try {
+            // Call OpenAI API to generate scenario
+            const generatedScenario = await this.generateScenarioWithAI(userPrompt);
 
-        // Generate system prompt
-        const systemPrompt = this.generateSystemPrompt(parsedData, flightDetails);
+            if (!generatedScenario) {
+                // Fallback to local parsing if API fails
+                console.log('Using fallback local parsing');
+                const parsedData = this.parseCustomPrompt(userPrompt);
+                const flightDetails = this.generateFlightDetails(parsedData);
+                const systemPrompt = this.generateSystemPrompt(parsedData, flightDetails);
+
+                this.finalizeScenario(userPrompt, parsedData, flightDetails, systemPrompt);
+            } else {
+                // Use AI-generated scenario
+                this.finalizeScenario(
+                    userPrompt,
+                    generatedScenario,
+                    generatedScenario,
+                    generatedScenario.system_prompt
+                );
+            }
+        } catch (error) {
+            console.error('Error generating scenario:', error);
+            alert('Error generating scenario. Using basic parsing instead.');
+
+            // Fallback to local parsing
+            const parsedData = this.parseCustomPrompt(userPrompt);
+            const flightDetails = this.generateFlightDetails(parsedData);
+            const systemPrompt = this.generateSystemPrompt(parsedData, flightDetails);
+
+            this.finalizeScenario(userPrompt, parsedData, flightDetails, systemPrompt);
+        } finally {
+            // Reset button
+            startButton.disabled = false;
+            startButton.textContent = originalButtonText;
+            startButton.classList.remove('loading');
+        }
+    }
+
+    async generateScenarioWithAI(userPrompt) {
+        try {
+            // Check if API endpoint is configured
+            if (!API_ENDPOINT || API_ENDPOINT === 'YOUR_API_ENDPOINT_HERE/atc') {
+                console.log('API not configured, using local parsing');
+                return null;
+            }
+
+            const response = await fetch(API_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'generate_scenario',
+                    prompt: userPrompt
+                })
+            });
+
+            if (!response.ok) {
+                console.error('API request failed:', response.status);
+                return null;
+            }
+
+            const data = await response.json();
+
+            if (data.success && data.scenario) {
+                console.log('AI-generated scenario:', data.scenario);
+                return data.scenario;
+            }
+
+            return null;
+        } catch (error) {
+            console.error('Error calling scenario generation API:', error);
+            return null;
+        }
+    }
+
+    finalizeScenario(userPrompt, parsedData, flightDetails, systemPrompt) {
 
         // Store custom scenario data
         this.currentCustomScenario = {
@@ -606,13 +683,28 @@ Respond as a controller would in this situation.`
     }
 
     createScenarioBrief(parsedData, flightDetails, userPrompt) {
+        // Handle both AI-generated and locally-parsed data
+        const callsign = flightDetails.callsign || parsedData.callsign || 'N12345';
+        const aircraftType = parsedData.aircraft_type || 'Cessna 172';
+        const squawk = flightDetails.squawk || parsedData.squawk || '1200';
+        const soulsOnBoard = flightDetails.souls_on_board || parsedData.souls_on_board || 1;
+        const fuelRemaining = flightDetails.fuel_remaining || parsedData.fuel_remaining ||
+                              `${flightDetails.fuel_hours || 3}+${(flightDetails.fuel_minutes || 0).toString().padStart(2, '0')}`;
+
+        const scenarioDescription = parsedData.scenario_description || userPrompt;
         const clearanceSection = this.generateClearanceInfo(parsedData, flightDetails);
 
         return `
             <div class="message system-message scenario-briefing">
                 <div class="briefing-header">
-                    <h3>📋 Scenario Briefing</h3>
-                    <p class="scenario-description">${userPrompt}</p>
+                    <h3>📋 AI-Generated Scenario Briefing</h3>
+                    <p class="scenario-description">${scenarioDescription}</p>
+                    ${parsedData.initial_call_example ? `
+                        <div class="ai-badge">
+                            <span class="badge-icon">🤖</span>
+                            <span>Powered by GPT-4</span>
+                        </div>
+                    ` : ''}
                 </div>
 
                 <div class="briefing-section">
@@ -620,23 +712,23 @@ Respond as a controller would in this situation.`
                     <div class="info-grid">
                         <div class="info-item">
                             <span class="info-label">Callsign:</span>
-                            <span class="info-value"><strong>${flightDetails.callsign}</strong></span>
+                            <span class="info-value"><strong>${callsign}</strong></span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Aircraft Type:</span>
-                            <span class="info-value">${parsedData.aircraft_type}</span>
+                            <span class="info-value">${aircraftType}</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Squawk:</span>
-                            <span class="info-value">${flightDetails.squawk}</span>
+                            <span class="info-value">${squawk}</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Souls on Board:</span>
-                            <span class="info-value">${flightDetails.souls_on_board}</span>
+                            <span class="info-value">${soulsOnBoard}</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Fuel Remaining:</span>
-                            <span class="info-value">${flightDetails.fuel_hours}+${flightDetails.fuel_minutes.toString().padStart(2, '0')}</span>
+                            <span class="info-value">${fuelRemaining}</span>
                         </div>
                     </div>
                 </div>
@@ -705,7 +797,24 @@ Respond as a controller would in this situation.`
     }
 
     generateClearanceInfo(parsedData, flightDetails) {
+        // Use AI-generated example if available
+        if (parsedData.initial_call_example) {
+            return `
+                <div class="briefing-section clearance-section">
+                    <h4>📡 Suggested Initial Call</h4>
+                    <div class="example-call">
+                        <p class="example-label">AI-generated example radio call:</p>
+                        <p class="example-text">"${parsedData.initial_call_example}"</p>
+                    </div>
+                </div>
+            `;
+        }
+
         if (!parsedData.scenario_type) return '';
+
+        const callsign = flightDetails.callsign || parsedData.callsign || 'N12345';
+        const runway = flightDetails.runway || parsedData.runway || '27';
+        const atis = flightDetails.atis || parsedData.atis || 'Alpha';
 
         let clearanceText = '';
         let exampleCall = '';
@@ -713,19 +822,27 @@ Respond as a controller would in this situation.`
         switch (parsedData.scenario_type) {
             case 'departure':
                 clearanceText = 'Clearance for Departure';
-                exampleCall = `"${parsedData.airport_name || 'Tower'}, ${flightDetails.callsign}, ready for departure, runway ${flightDetails.runway}."`;
+                exampleCall = `"${parsedData.airport_name || 'Tower'}, ${callsign}, ready for departure, runway ${runway}."`;
                 break;
             case 'arrival':
                 clearanceText = 'Expected Arrival Instructions';
-                exampleCall = `"${parsedData.airport_name || 'Tower'}, ${flightDetails.callsign}, ${parsedData.altitude || '3,000'}, inbound for landing with information ${flightDetails.atis}."`;
+                exampleCall = `"${parsedData.airport_name || 'Tower'}, ${callsign}, ${parsedData.altitude || '3,000'}, inbound for landing with information ${atis}."`;
                 break;
             case 'enroute':
                 clearanceText = 'Flight Following Request';
-                exampleCall = `"[Center], ${flightDetails.callsign}, VFR, requesting flight following."`;
+                exampleCall = `"[Center], ${callsign}, VFR, requesting flight following."`;
                 break;
             case 'practice_area':
                 clearanceText = 'Practice Area Operations';
-                exampleCall = `"${parsedData.airport_name || 'Tower'}, ${flightDetails.callsign}, maneuvering in the practice area at ${parsedData.altitude || '3,500'} feet."`;
+                exampleCall = `"${parsedData.airport_name || 'Tower'}, ${callsign}, maneuvering in the practice area at ${parsedData.altitude || '3,500'} feet."`;
+                break;
+            case 'ground':
+                clearanceText = 'Ground Operations';
+                exampleCall = `"${parsedData.airport_name || 'Ground'}, ${callsign}, ready to taxi with information ${atis}."`;
+                break;
+            case 'emergency':
+                clearanceText = 'Emergency Declaration';
+                exampleCall = `"Mayday, Mayday, Mayday. ${parsedData.airport_name || 'Tower'}, ${callsign}, declaring emergency."`;
                 break;
             default:
                 return '';
@@ -736,7 +853,7 @@ Respond as a controller would in this situation.`
                 <h4>📡 ${clearanceText}</h4>
                 <div class="example-call">
                     <p class="example-label">Example initial call:</p>
-                    <p class="example-text">${exampleCall}</p>
+                    <p class="example-text">"${exampleCall}"</p>
                 </div>
             </div>
         `;
