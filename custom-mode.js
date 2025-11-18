@@ -6,6 +6,49 @@ class CustomScenarioMode {
         this.currentCustomScenario = null;
         this.templates = this.createTemplates();
         this.examplePrompts = this.createExamplePrompts();
+        this.recentAirports = this.loadRecentAirports();
+    }
+
+    loadRecentAirports() {
+        try {
+            const saved = localStorage.getItem('recentAirportDiagrams');
+            return saved ? JSON.parse(saved) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    saveRecentAirport(icao) {
+        // Add to recent airports, keeping only last 5
+        this.recentAirports = [icao, ...this.recentAirports.filter(a => a !== icao)].slice(0, 5);
+        try {
+            localStorage.setItem('recentAirportDiagrams', JSON.stringify(this.recentAirports));
+        } catch (e) {
+            console.error('Failed to save recent airports:', e);
+        }
+        this.updateRecentAirportsUI();
+    }
+
+    updateRecentAirportsUI() {
+        const container = document.getElementById('recentAirports');
+        if (!container) return;
+
+        if (this.recentAirports.length === 0) {
+            container.innerHTML = '<p class="recent-empty">No recent searches</p>';
+            return;
+        }
+
+        container.innerHTML = this.recentAirports.map(icao =>
+            `<button class="recent-airport-btn" data-icao="${icao}">${icao}</button>`
+        ).join('');
+
+        // Add click handlers
+        container.querySelectorAll('.recent-airport-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('airportDiagramSearch').value = btn.dataset.icao;
+                this.loadAirportDiagram();
+            });
+        });
     }
 
     createTemplates() {
@@ -331,6 +374,10 @@ Respond as a controller would in this situation.`
                         />
                         <button class="btn-secondary" id="loadDiagram">Load Diagram</button>
                     </div>
+                    <div class="recent-airports-section">
+                        <p class="recent-label">Recent:</p>
+                        <div id="recentAirports" class="recent-airports-container"></div>
+                    </div>
                     <div id="airportDiagramViewer" class="airport-diagram-viewer">
                         <p class="diagram-placeholder">Enter an airport code to view its diagram</p>
                     </div>
@@ -370,6 +417,16 @@ Respond as a controller would in this situation.`
             document.getElementById('loadDiagram').addEventListener('click', () => {
                 this.loadAirportDiagram();
             });
+
+            // Add Enter key support for diagram search
+            document.getElementById('airportDiagramSearch').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.loadAirportDiagram();
+                }
+            });
+
+            // Initialize recent airports UI
+            this.updateRecentAirportsUI();
         }, 0);
 
         return div;
@@ -464,6 +521,24 @@ Respond as a controller would in this situation.`
         this.app.updateStatus('Ready');
     }
 
+    getCurrentAIRACCycle() {
+        // AIRAC cycles start on specific dates and repeat every 28 days
+        // Reference: Cycle 2501 starts January 2, 2025
+        const airacStart = new Date('2025-01-02');
+        const now = new Date();
+
+        // Calculate days since the reference AIRAC cycle
+        const daysSinceStart = Math.floor((now - airacStart) / (1000 * 60 * 60 * 24));
+
+        // Calculate which cycle we're in (each cycle is 28 days)
+        const cyclesSinceStart = Math.floor(daysSinceStart / 28);
+
+        // Cycle 2501 is the first cycle of 2025, so add the cycles to that
+        const currentCycle = 2501 + cyclesSinceStart;
+
+        return currentCycle.toString();
+    }
+
     loadAirportDiagram() {
         const searchInput = document.getElementById('airportDiagramSearch');
         const icao = searchInput.value.trim().toUpperCase();
@@ -473,34 +548,55 @@ Respond as a controller would in this situation.`
             return;
         }
 
+        // Save to recent searches
+        this.saveRecentAirport(icao);
+
         const viewer = document.getElementById('airportDiagramViewer');
         viewer.innerHTML = '<p class="loading">Loading airport diagram...</p>';
 
-        // Use FAA's airport diagram URL structure
-        // Note: These URLs change every 28 days with AIRAC cycle
-        const diagramUrl = `https://aeronav.faa.gov/d-tpp/2425/00000AD.PDF#nameddest=${icao}`;
+        // Automatically calculate current AIRAC cycle
+        const currentCycle = this.getCurrentAIRACCycle();
+
+        // Try current cycle and adjacent cycles as fallbacks
+        const cycles = [currentCycle, (parseInt(currentCycle) - 1).toString(), (parseInt(currentCycle) + 1).toString()];
+        const diagramUrl = `https://aeronav.faa.gov/d-tpp/${currentCycle}/00000AD.PDF#nameddest=${icao}`;
 
         viewer.innerHTML = `
             <div class="diagram-viewer-controls">
                 <a href="${diagramUrl}" target="_blank" class="btn-secondary">
-                    🔗 Open Full Diagram in New Tab
+                    Open Full Diagram in New Tab
                 </a>
-                <p class="diagram-note">Airport diagrams are provided by the FAA and updated every 28 days.</p>
+                <p class="diagram-note">Airport diagrams are provided by the FAA (AIRAC Cycle: ${currentCycle}) and updated every 28 days.</p>
             </div>
             <iframe
                 src="${diagramUrl}"
                 class="diagram-iframe"
                 title="Airport Diagram for ${icao}"
+                onload="this.style.opacity = 1;"
+                onerror="this.parentElement.querySelector('.diagram-error').style.display = 'block'; this.style.display = 'none';"
             ></iframe>
+            <div class="diagram-error" style="display: none; padding: 20px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin-top: 10px;">
+                <p><strong>⚠ Diagram failed to load</strong></p>
+                <p>The diagram for <strong>${icao}</strong> may not be available in the current AIRAC cycle (${currentCycle}).</p>
+                <p>Try these alternatives:</p>
+            </div>
             <div class="diagram-fallback">
-                <p>If the diagram doesn't load, try these alternatives:</p>
+                <p class="fallback-header">Alternative diagram sources:</p>
                 <ul>
-                    <li><a href="https://www.airnav.com/airport/${icao}" target="_blank">AirNav - ${icao}</a></li>
-                    <li><a href="https://skyvector.com/airport/${icao}" target="_blank">SkyVector - ${icao}</a></li>
-                    <li><a href="https://www.faa.gov/air_traffic/flight_info/aeronav/digital_products/dtpp/search/" target="_blank">FAA d-TPP Search</a></li>
+                    <li><a href="https://www.airnav.com/airport/${icao}" target="_blank">AirNav - ${icao}</a> - Comprehensive airport information</li>
+                    <li><a href="https://skyvector.com/airport/${icao}" target="_blank">SkyVector - ${icao}</a> - Interactive aviation charts</li>
+                    <li><a href="https://www.faa.gov/air_traffic/flight_info/aeronav/digital_products/dtpp/search/" target="_blank">FAA d-TPP Search</a> - Manual diagram search</li>
+                    <li><a href="https://chartfox.org/airport/${icao}" target="_blank">ChartFox - ${icao}</a> - Free aviation charts</li>
                 </ul>
             </div>
         `;
+
+        // Add CSS for smooth loading
+        const iframe = viewer.querySelector('.diagram-iframe');
+        if (iframe) {
+            iframe.style.opacity = '0';
+            iframe.style.transition = 'opacity 0.3s ease-in';
+        }
     }
 
     getCustomSystemPrompt() {
