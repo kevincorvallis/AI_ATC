@@ -815,17 +815,106 @@ Respond as a controller would in this situation.`
 
                 ${clearanceSection}
 
+                ${airport ? this.generateAirportDiagramSection(airport, airportName) : ''}
+
                 <div class="briefing-footer">
                     <p><strong>Ready to begin?</strong></p>
                     <p>Press and hold <strong>"Push to Talk"</strong> or the <strong>Spacebar</strong> to start your radio transmission.</p>
-                    ${airport ? `<p class="diagram-hint">💡 Scroll down to view the airport diagram for ${airport}</p>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    generateAirportDiagramSection(airport, airportName) {
+        const currentCycle = this.getCurrentAIRACCycle();
+        const prevCycle = (parseInt(currentCycle) - 1).toString();
+        const nextCycle = (parseInt(currentCycle) + 1).toString();
+        const diagramUrl = `https://aeronav.faa.gov/d-tpp/${currentCycle}/00000AD.PDF#nameddest=${airport}`;
+
+        return `
+            <div class="briefing-section diagram-section">
+                <h4>🗺️ Airport Diagram - ${airportName}</h4>
+                <p class="section-subtitle">Review the airport layout before your arrival:</p>
+
+                <div class="diagram-viewer-controls">
+                    <a href="${diagramUrl}" target="_blank" class="btn-secondary">
+                        Open Full Diagram in New Tab
+                    </a>
+                    <p class="diagram-note">FAA Airport Diagram (AIRAC Cycle: ${currentCycle})</p>
+                </div>
+
+                <div class="embedded-diagram-container">
+                    <iframe
+                        src="${diagramUrl}"
+                        class="embedded-diagram-iframe"
+                        title="Airport Diagram for ${airport}"
+                        onload="this.style.opacity = 1;"
+                        onerror="this.parentElement.querySelector('.diagram-load-error').style.display = 'block'; this.style.display = 'none';"
+                    ></iframe>
+
+                    <div class="diagram-load-error" style="display: none;">
+                        <p><strong>⚠ Diagram unavailable in cycle ${currentCycle}</strong></p>
+                        <p>Try alternate cycles:</p>
+                        <button class="btn-secondary btn-small" onclick="window.open('https://aeronav.faa.gov/d-tpp/${prevCycle}/00000AD.PDF#nameddest=${airport}', '_blank')">
+                            Cycle ${prevCycle}
+                        </button>
+                        <button class="btn-secondary btn-small" onclick="window.open('https://aeronav.faa.gov/d-tpp/${nextCycle}/00000AD.PDF#nameddest=${airport}', '_blank')">
+                            Cycle ${nextCycle}
+                        </button>
+                    </div>
+
+                    <div class="diagram-fallback-links">
+                        <p class="fallback-label">Alternative sources:</p>
+                        <a href="https://www.airnav.com/airport/${airport}" target="_blank">AirNav</a> •
+                        <a href="https://skyvector.com/airport/${airport}" target="_blank">SkyVector</a> •
+                        <a href="https://chartfox.org/airport/${airport}" target="_blank">ChartFox</a>
+                    </div>
                 </div>
             </div>
         `;
     }
 
     generateClearanceInfo(parsedData, flightDetails) {
-        // Use AI-generated example if available
+        // Use AI-generated examples if available
+        if (parsedData.radio_examples) {
+            const examples = parsedData.radio_examples;
+            return `
+                <div class="briefing-section clearance-section">
+                    <h4>📡 Suggested Radio Calls</h4>
+                    <p class="section-subtitle">Use these examples as you progress through the scenario:</p>
+
+                    ${examples.initial_contact ? `
+                    <div class="example-call">
+                        <p class="example-label">1️⃣ Initial Contact:</p>
+                        <p class="example-text">"${examples.initial_contact}"</p>
+                    </div>
+                    ` : ''}
+
+                    ${examples.position_report ? `
+                    <div class="example-call">
+                        <p class="example-label">2️⃣ Position Report:</p>
+                        <p class="example-text">"${examples.position_report}"</p>
+                    </div>
+                    ` : ''}
+
+                    ${examples.landing_request ? `
+                    <div class="example-call">
+                        <p class="example-label">3️⃣ Landing Request:</p>
+                        <p class="example-text">"${examples.landing_request}"</p>
+                    </div>
+                    ` : ''}
+
+                    ${examples.additional ? `
+                    <div class="example-call">
+                        <p class="example-label">💡 Additional:</p>
+                        <p class="example-text">"${examples.additional}"</p>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // Fallback for old format or local parsing
         if (parsedData.initial_call_example) {
             return `
                 <div class="briefing-section clearance-section">

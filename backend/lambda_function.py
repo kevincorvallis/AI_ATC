@@ -202,7 +202,12 @@ Return a JSON object with the following structure (use these EXACT field names):
     "ground": "Ground frequency (e.g., 121.900)",
     "departure": "Departure frequency (e.g., 121.700)",
     "scenario_description": "Enhanced 2-3 sentence description of the scenario",
-    "initial_call_example": "Exact radio call the pilot should make first (without quotes)",
+    "radio_examples": {
+        "initial_contact": "First call to make contact",
+        "position_report": "Call when reporting position (e.g., downwind, base, final)",
+        "landing_request": "Call when ready to land (if applicable)",
+        "additional": "Any other relevant call for this scenario"
+    },
     "system_prompt": "Detailed conversational system prompt for the ATC controller AI"
 }
 
