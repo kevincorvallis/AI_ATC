@@ -36,6 +36,10 @@
                 </div>
             </div>
             <div class="nav-right">
+                <button class="nav-btn settings-btn" id="settingsButton" title="Settings">
+                    <span class="nav-icon">⚙</span>
+                    <span>Settings</span>
+                </button>
                 <button class="nav-btn home-btn" id="homeButton">
                     <span class="nav-icon">⌂</span>
                     <span>Home</span>
@@ -245,6 +249,11 @@
             </div>
         </div>
 
+        <!-- Custom Mode Interface (hidden initially) -->
+        <div class="custom-mode-interface" id="customModeInterface" style="display: none;">
+            <!-- Populated dynamically by custom-mode.js -->
+        </div>
+
         <!-- Communication Interface (hidden initially) -->
         <div class="comm-interface" id="commInterface" style="display: none;">
             <div class="scenario-info">
@@ -273,11 +282,16 @@
 
             <!-- Controls -->
             <div class="controls">
-                <button class="ptt-button" id="pttButton">
+                <button class="ptt-button" id="pttButton" aria-label="Push to talk - hold to speak">
                     <span class="ptt-icon">🎙️</span>
                     <span class="ptt-text">Push to Talk</span>
                     <span class="ptt-hint">(Hold to speak)</span>
                 </button>
+                <div class="keyboard-hint">
+                    <span>or press</span>
+                    <kbd class="kbd">Space</kbd>
+                    <span>to transmit</span>
+                </div>
                 <div class="status" id="status">Ready</div>
             </div>
 
@@ -314,6 +328,120 @@
             </div>
         </div>
 
+        <!-- Tutorial Interface (hidden initially) -->
+        <div class="tutorial-interface" id="tutorialInterface" style="display: none;">
+            <div class="mode-header">
+                <h2>Guided Tutorial</h2>
+                <button class="btn-secondary" id="exitTutorial">← Exit Tutorial</button>
+            </div>
+            <div id="tutorialProgress" class="tutorial-progress">
+                <!-- Populated by JavaScript -->
+            </div>
+            <div id="tutorialContent" class="tutorial-content">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Settings Panel (Modal) -->
+        <div class="settings-modal" id="settingsModal" style="display: none;">
+            <div class="settings-overlay" id="settingsOverlay"></div>
+            <div class="settings-panel">
+                <div class="settings-header">
+                    <h2>⚙ Settings</h2>
+                    <button class="settings-close" id="closeSettings">×</button>
+                </div>
+                <div class="settings-content">
+                    <div class="settings-section">
+                        <h3>Speech Settings</h3>
+                        <div class="setting-item">
+                            <label for="speechRate">Speech Rate</label>
+                            <input type="range" id="speechRate" min="0.5" max="1.5" step="0.1" value="0.9">
+                            <span id="speechRateValue">0.9x</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="speechVolume">Volume</label>
+                            <input type="range" id="speechVolume" min="0" max="1" step="0.1" value="1">
+                            <span id="speechVolumeValue">100%</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="autoPlayATC">
+                                <input type="checkbox" id="autoPlayATC" checked>
+                                Auto-play ATC responses
+                            </label>
+                        </div>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Display Settings</h3>
+                        <div class="setting-item">
+                            <label for="showKeyboardHints">
+                                <input type="checkbox" id="showKeyboardHints" checked>
+                                Show keyboard shortcuts
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <label for="enableSoundEffects">
+                                <input type="checkbox" id="enableSoundEffects" checked>
+                                Enable sound effects
+                            </label>
+                        </div>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Pilot Preferences</h3>
+                        <div class="setting-item">
+                            <label for="callsignPrefix">Default Callsign Prefix</label>
+                            <select id="callsignPrefix">
+                                <option value="N">N (US)</option>
+                                <option value="C">C (Canada)</option>
+                                <option value="G">G (UK)</option>
+                                <option value="D">D (Germany)</option>
+                                <option value="F">F (France)</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label for="preferredAircraft">Preferred Aircraft</label>
+                            <select id="preferredAircraft">
+                                <option value="Cessna 172">Cessna 172</option>
+                                <option value="Cessna 152">Cessna 152</option>
+                                <option value="Piper Cherokee">Piper Cherokee</option>
+                                <option value="Cirrus SR22">Cirrus SR22</option>
+                                <option value="Diamond DA40">Diamond DA40</option>
+                                <option value="Beechcraft Bonanza">Beechcraft Bonanza</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Progress & Data</h3>
+                        <div class="setting-item stats-display">
+                            <div class="stat-item">
+                                <span class="stat-label">Total Sessions:</span>
+                                <span class="stat-value" id="statSessions">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Transmissions:</span>
+                                <span class="stat-value" id="statTransmissions">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Total Time:</span>
+                                <span class="stat-value" id="statTime">0m</span>
+                            </div>
+                        </div>
+                        <div class="setting-actions">
+                            <button class="btn-secondary btn-danger" id="resetProgress">Reset All Progress</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-footer">
+                    <button class="btn-secondary" id="resetSettings">Reset to Defaults</button>
+                    <button class="btn-primary" id="saveSettings">Save Settings</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tutorial Overlay -->
+        <div class="tutorial-overlay" id="tutorialOverlay" style="display: none;">
+            <!-- Populated by JavaScript -->
+        </div>
+
         <!-- Footer -->
         <footer>
             <p>Practice makes perfect. Fly safe! ✈️</p>
@@ -323,6 +451,8 @@
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+    <!-- Core Architecture (must load first) -->
+    <script src="core.js"></script>
     <script src="config.js"></script>
     <script src="scenarios-config.js"></script>
     <script src="airports.js"></script>

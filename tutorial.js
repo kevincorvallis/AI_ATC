@@ -75,10 +75,10 @@ class ATCTutorial {
                     },
                     {
                         category: "flight_following",
-                        scenarioId: "ff_traffic_advisories",
-                        instruction: "Listen for traffic calls and respond appropriately when you see the traffic.",
-                        expectedPhrases: ["traffic", "sight"],
-                        tip: "Say: '[Callsign], traffic in sight' or '[Callsign], looking for traffic'"
+                        scenarioId: "ff_position_reports",
+                        instruction: "Make proper position reports during flight following.",
+                        expectedPhrases: ["position", "altitude", "heading"],
+                        tip: "Say: '[Approach], [Callsign], position [location], [altitude], [destination]'"
                     }
                 ]
             },

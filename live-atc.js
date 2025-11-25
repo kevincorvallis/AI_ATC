@@ -99,10 +99,16 @@ class LiveATCPlayer {
     createAirportCard(airport) {
         const card = document.createElement('div');
         card.className = 'airport-card';
-        
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('role', 'article');
+        card.setAttribute('aria-label', `${airport.name} - ${airport.city}`);
+
         const header = document.createElement('div');
         header.className = 'airport-card-header';
-        header.innerHTML = '<h4>' + airport.name + ' (' + airport.icao + ')</h4><p>' + airport.city + '</p>';
+        header.innerHTML = `
+            <h4>${airport.name} <span class="airport-icao">${airport.icao}</span></h4>
+            <p><span class="city-icon">📍</span> ${airport.city}</p>
+        `;
         card.appendChild(header);
 
         const feedsContainer = document.createElement('div');
@@ -111,7 +117,14 @@ class LiveATCPlayer {
         airport.feeds.forEach(feed => {
             const feedBtn = document.createElement('button');
             feedBtn.className = 'feed-button';
-            feedBtn.innerHTML = '<strong>' + feed.name + '</strong><span class="feed-freq">' + feed.frequency + '</span>';
+            feedBtn.setAttribute('aria-label', `Listen to ${feed.name} on ${feed.frequency}`);
+            feedBtn.innerHTML = `
+                <span class="feed-info">
+                    <span class="feed-name">${feed.name}</span>
+                    <span class="feed-type">${feed.external ? 'External' : 'Stream'}</span>
+                </span>
+                <span class="feed-freq">${feed.frequency}</span>
+            `;
             feedBtn.addEventListener('click', () => {
                 this.playFeed(airport, feed);
             });

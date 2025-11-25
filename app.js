@@ -32,8 +32,10 @@ class ATCTrainingApp {
         this.recognition.onstart = () => {
             this.isListening = true;
             this.updateStatus('Listening... Speak now');
-            document.getElementById('pttButton').classList.add('active');
-            document.getElementById('signalIndicator').classList.add('transmitting');
+            const pttBtn = document.getElementById('pttButton');
+            const signalInd = document.getElementById('signalIndicator');
+            if (pttBtn) pttBtn.classList.add('active');
+            if (signalInd) signalInd.classList.add('transmitting');
 
             // Show live transcription box
             this.showLiveTranscription();
@@ -68,15 +70,20 @@ class ATCTrainingApp {
             console.error('Speech recognition error:', event.error);
             this.updateStatus(`Error: ${event.error}`);
             this.isListening = false;
-            document.getElementById('pttButton').classList.remove('active');
-            document.getElementById('signalIndicator').classList.remove('transmitting');
+            const pttBtn = document.getElementById('pttButton');
+            const signalInd = document.getElementById('signalIndicator');
+            if (pttBtn) pttBtn.classList.remove('active');
+            if (signalInd) signalInd.classList.remove('transmitting');
             this.hideLiveTranscription();
+            this.showToast('Speech recognition error. Please try again.', 'error');
         };
 
         this.recognition.onend = () => {
             this.isListening = false;
-            document.getElementById('pttButton').classList.remove('active');
-            document.getElementById('signalIndicator').classList.remove('transmitting');
+            const pttBtn = document.getElementById('pttButton');
+            const signalInd = document.getElementById('signalIndicator');
+            if (pttBtn) pttBtn.classList.remove('active');
+            if (signalInd) signalInd.classList.remove('transmitting');
             this.hideLiveTranscription();
             if (!this.isSpeaking) {
                 this.updateStatus('Ready');
@@ -361,43 +368,94 @@ class ATCTrainingApp {
     }
 
     handleDemoMode(pilotMessage) {
-        // Demo responses for testing transcription feature
-        const demoResponses = {
-            'pattern_work': [
-                "Cessna 12345, Tower, runway 27, cleared for takeoff, make left traffic.",
-                "Cessna 12345, roger, report when entering downwind.",
-                "Cessna 12345, cleared to land runway 27, wind 270 at 8.",
-                "Cessna 12345, roger, taxi to parking via taxiway Alpha."
-            ],
-            'ground_operations': [
-                "Cessna 12345, Ground, taxi to runway 27 via taxiway Alpha, hold short of runway 27.",
-                "Cessna 12345, cross runway 27, continue on Alpha.",
-                "Cessna 12345, contact Tower on 118.3."
-            ],
-            'flight_following': [
-                "Cessna 12345, radar contact, squawk 1234, flight following approved.",
-                "Cessna 12345, traffic 2 o'clock, 5 miles, northbound, altitude indicates 3,500.",
-                "Cessna 12345, roger, radar service terminated, squawk VFR, frequency change approved."
-            ],
-            'emergency': [
-                "Cessna 12345, say souls on board and fuel remaining.",
-                "Cessna 12345, roger, emergency equipment is standing by, runway 27 is clear for landing.",
-                "Cessna 12345, you're doing great, cleared to land any runway."
-            ]
-        };
+        // Intelligent contextual demo responses
+        const messageLower = pilotMessage.toLowerCase();
 
-        const responses = demoResponses[this.currentScenario] || demoResponses['pattern_work'];
-        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+        // Try to extract callsign from message or use default
+        let callsign = 'Cessna 12345';
+        const callsignMatch = pilotMessage.match(/([A-Z]-?[A-Z]{4}|N\d{3,5}[A-Z]?|[A-Za-z]+\s*\d{2,5})/i);
+        if (callsignMatch) {
+            callsign = callsignMatch[1].toUpperCase();
+        }
+
+        let response = '';
+
+        // Contextual response logic based on pilot's message
+        if (messageLower.includes('ready for departure') || messageLower.includes('ready for takeoff')) {
+            response = `${callsign}, Tower, runway 27, cleared for takeoff, wind 270 at 8, make left traffic.`;
+        } else if (messageLower.includes('downwind')) {
+            response = `${callsign}, Tower, roger downwind, report base.`;
+        } else if (messageLower.includes('base') || messageLower.includes('final')) {
+            const fullStop = messageLower.includes('full stop');
+            response = fullStop
+                ? `${callsign}, cleared to land runway 27, wind 270 at 8.`
+                : `${callsign}, cleared touch and go runway 27, wind 270 at 8.`;
+        } else if (messageLower.includes('touch and go') || messageLower.includes('option')) {
+            response = `${callsign}, cleared for the option runway 27, wind 270 at 8.`;
+        } else if (messageLower.includes('taxi') && messageLower.includes('information')) {
+            const atisLetter = messageLower.match(/information\s+([a-z])/i)?.[1]?.toUpperCase() || 'Alpha';
+            response = `${callsign}, Ground, information ${atisLetter} is current, taxi to runway 27 via Alpha, hold short runway 27.`;
+        } else if (messageLower.includes('hold short')) {
+            response = `${callsign}, hold short runway 27.`;
+        } else if (messageLower.includes('request') && messageLower.includes('flight following')) {
+            response = `${callsign}, squawk 4521, radar contact, flight following approved, proceed on course.`;
+        } else if (messageLower.includes('traffic in sight') || messageLower.includes('looking')) {
+            response = messageLower.includes('in sight')
+                ? `${callsign}, roger, maintain visual separation.`
+                : `${callsign}, traffic no longer a factor.`;
+        } else if (messageLower.includes('mayday') || messageLower.includes('emergency')) {
+            response = `${callsign}, roger mayday, souls on board and fuel remaining? All emergency equipment standing by.`;
+        } else if (messageLower.includes('minimum fuel') || messageLower.includes('low fuel')) {
+            response = `${callsign}, roger minimum fuel, you're number one for runway 27, cleared to land, emergency equipment standing by.`;
+        } else if (messageLower.includes('souls') || messageLower.includes('fuel remaining')) {
+            response = `${callsign}, roger, runway 27 cleared for landing, winds calm, emergency equipment is standing by.`;
+        } else if (messageLower.includes('inbound') || messageLower.includes('landing')) {
+            response = `${callsign}, Tower, make straight in runway 27, report 2 mile final.`;
+        } else if (messageLower.includes('clear') && messageLower.includes('runway')) {
+            response = `${callsign}, roger, taxi to parking via Alpha.`;
+        } else {
+            // Fallback to category-based responses
+            const categoryResponses = {
+                'pattern_work': [
+                    `${callsign}, Tower, roger, report entering downwind.`,
+                    `${callsign}, extend downwind, I'll call your base.`,
+                    `${callsign}, number 2 following traffic on short final.`
+                ],
+                'ground_operations': [
+                    `${callsign}, Ground, say your request.`,
+                    `${callsign}, hold your position, traffic crossing ahead.`,
+                    `${callsign}, continue taxi to runway 27.`
+                ],
+                'flight_following': [
+                    `${callsign}, traffic 10 o'clock, 3 miles, southwest bound, altitude indicates 4,500.`,
+                    `${callsign}, roger, altimeter 30.12, frequency change approved.`,
+                    `${callsign}, proceed direct to destination, report any weather deviations.`
+                ],
+                'emergency': [
+                    `${callsign}, say nature of emergency.`,
+                    `${callsign}, do you need assistance? Equipment is standing by.`,
+                    `${callsign}, you're cleared to land any runway, do you need vectors?`
+                ]
+            };
+
+            const responses = categoryResponses[this.currentScenario] || categoryResponses['pattern_work'];
+            response = responses[Math.floor(Math.random() * responses.length)];
+        }
 
         // Add to history
         this.conversationHistory.push({
             role: 'assistant',
-            content: randomResponse
+            content: response
         });
+
+        // Track transmission in progress
+        if (window.appCore) {
+            window.appCore.progress.incrementTransmissions();
+        }
 
         // Simulate network delay
         setTimeout(() => {
-            this.handleATCResponse(randomResponse, false);
+            this.handleATCResponse(response, false);
         }, 800);
     }
 
@@ -410,31 +468,45 @@ class ATCTrainingApp {
     }
 
     speak(text) {
+        // Check if auto-play is enabled
+        if (window.appCore && !window.appCore.settings.get('autoPlayATC')) {
+            return;
+        }
+
         // Cancel any ongoing speech
         this.synthesis.cancel();
 
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 0.9; // Slightly slower for clarity
+
+        // Use settings for speech rate and volume
+        if (window.appCore) {
+            utterance.rate = window.appCore.settings.get('speechRate') || 0.9;
+            utterance.volume = window.appCore.settings.get('speechVolume') || 1.0;
+        } else {
+            utterance.rate = 0.9;
+            utterance.volume = 1.0;
+        }
         utterance.pitch = 1.0;
-        utterance.volume = 1.0;
+
+        const signalIndicator = document.getElementById('signalIndicator');
 
         utterance.onstart = () => {
             this.isSpeaking = true;
             this.updateStatus('ATC Speaking...');
-            document.getElementById('signalIndicator').classList.add('receiving');
+            if (signalIndicator) signalIndicator.classList.add('receiving');
         };
 
         utterance.onend = () => {
             this.isSpeaking = false;
             this.updateStatus('Ready');
-            document.getElementById('signalIndicator').classList.remove('receiving');
+            if (signalIndicator) signalIndicator.classList.remove('receiving');
         };
 
         utterance.onerror = (event) => {
             console.error('Speech synthesis error:', event);
             this.isSpeaking = false;
             this.updateStatus('Ready');
-            document.getElementById('signalIndicator').classList.remove('receiving');
+            if (signalIndicator) signalIndicator.classList.remove('receiving');
         };
 
         this.synthesis.speak(utterance);
@@ -645,22 +717,269 @@ class ATCTrainingApp {
         const mapContainer = document.getElementById('airportMapContainer');
         const toggleBtn = document.getElementById('toggleMapBtn');
 
-        if (mapContainer.style.display === 'none') {
+        if (mapContainer && mapContainer.style.display === 'none') {
             mapContainer.style.display = 'block';
-            toggleBtn.textContent = '📋 Show List';
+            if (toggleBtn) toggleBtn.textContent = '📋 Show List';
             showAirportMap();
-        } else {
+        } else if (mapContainer) {
             mapContainer.style.display = 'none';
-            toggleBtn.textContent = '🗺️ Show Map';
+            if (toggleBtn) toggleBtn.textContent = '🗺️ Show Map';
         }
+    }
+
+    // Toast notification system
+    showToast(message, type = 'info') {
+        // Create toast container if it doesn't exist
+        let toastContainer = document.getElementById('toastContainer');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'toastContainer';
+            toastContainer.className = 'toast-container';
+            document.body.appendChild(toastContainer);
+        }
+
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+
+        const icons = {
+            info: 'ℹ️',
+            success: '✓',
+            warning: '⚠️',
+            error: '✕'
+        };
+
+        toast.innerHTML = `
+            <span class="toast-icon">${icons[type] || icons.info}</span>
+            <span class="toast-message">${message}</span>
+            <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+        `;
+
+        toastContainer.appendChild(toast);
+
+        // Trigger animation
+        requestAnimationFrame(() => {
+            toast.classList.add('toast-show');
+        });
+
+        // Auto-remove after 4 seconds
+        setTimeout(() => {
+            toast.classList.remove('toast-show');
+            toast.classList.add('toast-hide');
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
     }
 }
 
 // Store app instance globally for tutorial access
 let atcApp = null;
 
+// Initialize Settings Panel
+function initSettingsPanel() {
+    const settingsBtn = document.getElementById('settingsButton');
+    const settingsModal = document.getElementById('settingsModal');
+    const closeSettings = document.getElementById('closeSettings');
+    const settingsOverlay = document.getElementById('settingsOverlay');
+    const saveSettings = document.getElementById('saveSettings');
+    const resetSettings = document.getElementById('resetSettings');
+    const resetProgress = document.getElementById('resetProgress');
+
+    // Open settings
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => {
+            if (settingsModal) {
+                settingsModal.style.display = 'flex';
+                loadSettingsValues();
+                updateStatsDisplay();
+            }
+        });
+    }
+
+    // Close settings
+    const closeSettingsModal = () => {
+        if (settingsModal) {
+            settingsModal.style.display = 'none';
+        }
+    };
+
+    if (closeSettings) closeSettings.addEventListener('click', closeSettingsModal);
+    if (settingsOverlay) settingsOverlay.addEventListener('click', closeSettingsModal);
+
+    // Escape key to close
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && settingsModal && settingsModal.style.display === 'flex') {
+            closeSettingsModal();
+        }
+    });
+
+    // Save settings
+    if (saveSettings) {
+        saveSettings.addEventListener('click', () => {
+            saveSettingsValues();
+            closeSettingsModal();
+            if (window.atcApp) {
+                window.atcApp.showToast('Settings saved!', 'success');
+            }
+        });
+    }
+
+    // Reset settings
+    if (resetSettings) {
+        resetSettings.addEventListener('click', () => {
+            if (window.appCore) {
+                window.appCore.settings.reset();
+                loadSettingsValues();
+                if (window.atcApp) {
+                    window.atcApp.showToast('Settings reset to defaults', 'info');
+                }
+            }
+        });
+    }
+
+    // Reset progress
+    if (resetProgress) {
+        resetProgress.addEventListener('click', () => {
+            if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
+                if (window.appCore) {
+                    window.appCore.progress.reset();
+                    updateStatsDisplay();
+                    if (window.atcApp) {
+                        window.atcApp.showToast('Progress reset', 'info');
+                    }
+                }
+            }
+        });
+    }
+
+    // Slider value updates
+    const speechRate = document.getElementById('speechRate');
+    const speechRateValue = document.getElementById('speechRateValue');
+    if (speechRate && speechRateValue) {
+        speechRate.addEventListener('input', () => {
+            speechRateValue.textContent = `${speechRate.value}x`;
+        });
+    }
+
+    const speechVolume = document.getElementById('speechVolume');
+    const speechVolumeValue = document.getElementById('speechVolumeValue');
+    if (speechVolume && speechVolumeValue) {
+        speechVolume.addEventListener('input', () => {
+            speechVolumeValue.textContent = `${Math.round(speechVolume.value * 100)}%`;
+        });
+    }
+}
+
+// Load settings values into the form
+function loadSettingsValues() {
+    if (!window.appCore) return;
+
+    const settings = window.appCore.settings;
+
+    // Speech settings
+    const speechRate = document.getElementById('speechRate');
+    const speechRateValue = document.getElementById('speechRateValue');
+    if (speechRate) {
+        speechRate.value = settings.get('speechRate');
+        if (speechRateValue) speechRateValue.textContent = `${settings.get('speechRate')}x`;
+    }
+
+    const speechVolume = document.getElementById('speechVolume');
+    const speechVolumeValue = document.getElementById('speechVolumeValue');
+    if (speechVolume) {
+        speechVolume.value = settings.get('speechVolume');
+        if (speechVolumeValue) speechVolumeValue.textContent = `${Math.round(settings.get('speechVolume') * 100)}%`;
+    }
+
+    const autoPlayATC = document.getElementById('autoPlayATC');
+    if (autoPlayATC) autoPlayATC.checked = settings.get('autoPlayATC');
+
+    // Display settings
+    const showKeyboardHints = document.getElementById('showKeyboardHints');
+    if (showKeyboardHints) showKeyboardHints.checked = settings.get('showKeyboardHints');
+
+    const enableSoundEffects = document.getElementById('enableSoundEffects');
+    if (enableSoundEffects) enableSoundEffects.checked = settings.get('enableSoundEffects');
+
+    // Pilot preferences
+    const callsignPrefix = document.getElementById('callsignPrefix');
+    if (callsignPrefix) callsignPrefix.value = settings.get('callsignPrefix');
+
+    const preferredAircraft = document.getElementById('preferredAircraft');
+    if (preferredAircraft) preferredAircraft.value = settings.get('preferredAircraft');
+}
+
+// Save settings values from the form
+function saveSettingsValues() {
+    if (!window.appCore) return;
+
+    const settings = window.appCore.settings;
+
+    const speechRate = document.getElementById('speechRate');
+    if (speechRate) settings.set('speechRate', parseFloat(speechRate.value));
+
+    const speechVolume = document.getElementById('speechVolume');
+    if (speechVolume) settings.set('speechVolume', parseFloat(speechVolume.value));
+
+    const autoPlayATC = document.getElementById('autoPlayATC');
+    if (autoPlayATC) settings.set('autoPlayATC', autoPlayATC.checked);
+
+    const showKeyboardHints = document.getElementById('showKeyboardHints');
+    if (showKeyboardHints) {
+        settings.set('showKeyboardHints', showKeyboardHints.checked);
+        const keyboardHint = document.querySelector('.keyboard-hint');
+        if (keyboardHint) {
+            keyboardHint.style.display = showKeyboardHints.checked ? 'inline-flex' : 'none';
+        }
+    }
+
+    const enableSoundEffects = document.getElementById('enableSoundEffects');
+    if (enableSoundEffects) settings.set('enableSoundEffects', enableSoundEffects.checked);
+
+    const callsignPrefix = document.getElementById('callsignPrefix');
+    if (callsignPrefix) settings.set('callsignPrefix', callsignPrefix.value);
+
+    const preferredAircraft = document.getElementById('preferredAircraft');
+    if (preferredAircraft) settings.set('preferredAircraft', preferredAircraft.value);
+}
+
+// Update stats display
+function updateStatsDisplay() {
+    if (!window.appCore) return;
+
+    const stats = window.appCore.progress.getStatistics();
+
+    const statSessions = document.getElementById('statSessions');
+    if (statSessions) statSessions.textContent = stats.totalSessions;
+
+    const statTransmissions = document.getElementById('statTransmissions');
+    if (statTransmissions) statTransmissions.textContent = stats.totalTransmissions;
+
+    const statTime = document.getElementById('statTime');
+    if (statTime) {
+        const minutes = Math.floor(stats.totalTime / 60000);
+        const hours = Math.floor(minutes / 60);
+        if (hours > 0) {
+            statTime.textContent = `${hours}h ${minutes % 60}m`;
+        } else {
+            statTime.textContent = `${minutes}m`;
+        }
+    }
+}
+
 // Initialize app when page loads
 document.addEventListener('DOMContentLoaded', () => {
     atcApp = new ATCTrainingApp();
     window.atcApp = atcApp; // Make available globally for tutorial
+
+    // Initialize settings panel
+    initSettingsPanel();
+
+    // Apply saved settings
+    if (window.appCore) {
+        const showKeyboardHints = window.appCore.settings.get('showKeyboardHints');
+        const keyboardHint = document.querySelector('.keyboard-hint');
+        if (keyboardHint && !showKeyboardHints) {
+            keyboardHint.style.display = 'none';
+        }
+    }
 });
