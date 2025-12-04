@@ -141,14 +141,36 @@ class ATCTrainingApp {
 
         // Category selection (Pattern Work, Ground Ops, etc.)
         document.querySelectorAll('.scenario-card[data-category]').forEach(card => {
+            // Add accessibility attributes
+            card.setAttribute('role', 'button');
+            card.setAttribute('tabindex', '0');
+            card.setAttribute('aria-label', `Select ${card.querySelector('h3')?.textContent || 'scenario'} category`);
+
             card.addEventListener('click', (e) => {
                 const category = e.currentTarget.dataset.category;
                 this.showIndividualScenarios(category);
+            });
+
+            // Keyboard navigation - Enter/Space to select
+            card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    const category = e.currentTarget.dataset.category;
+                    this.showIndividualScenarios(category);
+                }
             });
         });
 
         // PTT button (mouse)
         const pttButton = document.getElementById('pttButton');
+
+        // Add accessibility attributes to PTT button
+        if (pttButton) {
+            pttButton.setAttribute('aria-label', 'Push to talk - Hold to speak, release to transmit');
+            pttButton.setAttribute('aria-pressed', 'false');
+            pttButton.setAttribute('role', 'button');
+        }
+
         pttButton.addEventListener('mousedown', () => this.startListening());
         pttButton.addEventListener('mouseup', () => this.stopListening());
         pttButton.addEventListener('mouseleave', () => this.stopListening());
@@ -277,6 +299,9 @@ class ATCTrainingApp {
 
         try {
             this.recognition.start();
+            // Update accessibility state
+            const pttButton = document.getElementById('pttButton');
+            if (pttButton) pttButton.setAttribute('aria-pressed', 'true');
         } catch (error) {
             console.error('Error starting recognition:', error);
         }
@@ -285,6 +310,9 @@ class ATCTrainingApp {
     stopListening() {
         if (this.isListening) {
             this.recognition.stop();
+            // Update accessibility state
+            const pttButton = document.getElementById('pttButton');
+            if (pttButton) pttButton.setAttribute('aria-pressed', 'false');
         }
     }
 
@@ -312,6 +340,12 @@ class ATCTrainingApp {
                 return;
             }
 
+            // Limit conversation history to prevent memory growth (keep last 20 exchanges)
+            const MAX_HISTORY = 20;
+            if (this.conversationHistory.length > MAX_HISTORY) {
+                this.conversationHistory = this.conversationHistory.slice(-MAX_HISTORY);
+            }
+
             // Prepare request body
             const requestBody = {
                 scenario: this.currentScenario,
@@ -324,13 +358,20 @@ class ATCTrainingApp {
                 requestBody.customSystemPrompt = window.customMode.currentCustomScenario.systemPrompt;
             }
 
+            // Create AbortController for timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
             const response = await fetch(API_ENDPOINT, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify(requestBody),
+                signal: controller.signal
             });
+
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 // Backend error - switch to demo mode
@@ -341,7 +382,15 @@ class ATCTrainingApp {
                 return;
             }
 
-            const data = await response.json();
+            let data;
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                console.error('Failed to parse API response:', parseError);
+                this.addMessage('system', 'Error communicating with ATC. Switching to Demo Mode...');
+                this.handleDemoMode(message);
+                return;
+            }
 
             if (data.success) {
                 // Add ATC response to conversation history
@@ -359,10 +408,17 @@ class ATCTrainingApp {
             }
 
         } catch (error) {
-            // Network error - demo mode works fine
-            console.info('Backend unavailable. Demo Mode active - all features work!');
-            this.updateStatus('Demo Mode Active');
-            this.addMessage('system', '💡 Demo Mode Active - Practice with pre-programmed ATC responses!');
+            // Handle different error types
+            if (error.name === 'AbortError') {
+                console.info('Request timeout - switching to Demo Mode');
+                this.updateStatus('Connection Timeout');
+                this.addMessage('system', '⏱️ Request timed out. Switching to Demo Mode...');
+            } else {
+                // Network error - demo mode works fine
+                console.info('Backend unavailable. Demo Mode active - all features work!');
+                this.updateStatus('Demo Mode Active');
+                this.addMessage('system', '💡 Demo Mode Active - Practice with pre-programmed ATC responses!');
+            }
             this.handleDemoMode(message);
         }
     }
@@ -473,20 +529,49 @@ class ATCTrainingApp {
             return;
         }
 
+        // Check if speech synthesis is available
+        if (!this.synthesis || !window.speechSynthesis) {
+            console.warn('Speech synthesis not available');
+            return;
+        }
+
         // Cancel any ongoing speech
         this.synthesis.cancel();
 
         const utterance = new SpeechSynthesisUtterance(text);
 
-        // Use settings for speech rate and volume
+        // Use settings for speech rate and volume with validation
+        let rate = 0.9;
+        let volume = 1.0;
         if (window.appCore) {
-            utterance.rate = window.appCore.settings.get('speechRate') || 0.9;
-            utterance.volume = window.appCore.settings.get('speechVolume') || 1.0;
-        } else {
-            utterance.rate = 0.9;
-            utterance.volume = 1.0;
+            rate = window.appCore.settings.get('speechRate') || 0.9;
+            volume = window.appCore.settings.get('speechVolume') || 1.0;
         }
+        // Validate ranges: rate [0.1, 10], volume [0, 1]
+        utterance.rate = Math.max(0.1, Math.min(10, rate));
+        utterance.volume = Math.max(0, Math.min(1, volume));
         utterance.pitch = 1.0;
+
+        // Try to select an appropriate voice for ATC
+        const voices = this.synthesis.getVoices();
+        if (voices.length > 0) {
+            // Prefer English voices, ideally male for realistic ATC
+            const preferredVoice = window.appCore?.settings.get('atcVoice');
+            if (preferredVoice) {
+                const selectedVoice = voices.find(v => v.name === preferredVoice);
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                }
+            } else {
+                // Default: find a good English voice
+                const englishVoice = voices.find(v =>
+                    v.lang.startsWith('en') && (v.name.includes('Male') || v.name.includes('Daniel') || v.name.includes('Alex'))
+                ) || voices.find(v => v.lang.startsWith('en-US')) || voices.find(v => v.lang.startsWith('en'));
+                if (englishVoice) {
+                    utterance.voice = englishVoice;
+                }
+            }
+        }
 
         const signalIndicator = document.getElementById('signalIndicator');
 
@@ -533,17 +618,21 @@ class ATCTrainingApp {
         }
 
         messageDiv.className = messageClass;
-        
-        let html = '';
+
+        // Build message safely using DOM methods to prevent XSS
         if (sender !== 'system') {
-            html += '<strong>' + senderLabel + ':</strong> ';
+            const strong = document.createElement('strong');
+            strong.textContent = senderLabel + ':';
+            messageDiv.appendChild(strong);
+            messageDiv.appendChild(document.createTextNode(' '));
         }
-        html += text;
+        messageDiv.appendChild(document.createTextNode(text));
         if (hasFeedback) {
-            html += '<span class="feedback-indicator">💡 Feedback</span>';
+            const feedbackSpan = document.createElement('span');
+            feedbackSpan.className = 'feedback-indicator';
+            feedbackSpan.textContent = '💡 Feedback';
+            messageDiv.appendChild(feedbackSpan);
         }
-        
-        messageDiv.innerHTML = html;
 
         conversation.appendChild(messageDiv);
         conversation.scrollTop = conversation.scrollHeight;

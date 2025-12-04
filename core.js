@@ -69,7 +69,10 @@ const DEFAULT_SETTINGS = {
     enableSoundEffects: true,
     theme: 'dark',
     callsignPrefix: 'N',
-    preferredAircraft: 'Cessna 172'
+    preferredAircraft: 'Cessna 172',
+    atcVoice: null, // Will use best available English voice if null
+    highContrastMode: false,
+    reducedMotion: false
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -893,14 +896,106 @@ class AppCore {
         this.progress = new ProgressManager(this.eventBus);
         this.viewManager = new ViewManager(this.eventBus, this.state);
 
+        // Session recovery
+        this.autoSaveInterval = null;
+        this.SESSION_BACKUP_KEY = 'atc_session_backup';
+
         // Start session tracking
         this.progress.startSession();
 
         // Setup global error handler
         this.setupErrorHandler();
 
+        // Setup auto-save
+        this.setupAutoSave();
+
+        // Check for recoverable session
+        this.checkSessionRecovery();
+
         // Log initialization
         console.log(`ATC Training System v${APP_VERSION} initialized`);
+    }
+
+    /**
+     * Setup auto-save for session recovery
+     */
+    setupAutoSave() {
+        // Auto-save every 30 seconds
+        this.autoSaveInterval = setInterval(() => this.saveSessionBackup(), 30000);
+
+        // Also save on page unload
+        window.addEventListener('beforeunload', () => this.saveSessionBackup());
+    }
+
+    /**
+     * Save current session state for recovery
+     */
+    saveSessionBackup() {
+        try {
+            const backup = {
+                timestamp: Date.now(),
+                conversationHistory: this.state.get('conversationHistory') || [],
+                currentScenario: this.state.get('currentScenario'),
+                currentCategory: this.state.get('currentCategory'),
+                viewHistory: this.state.get('viewHistory') || []
+            };
+
+            // Only save if there's actual conversation data
+            if (backup.conversationHistory.length > 0 || backup.currentScenario) {
+                localStorage.setItem(this.SESSION_BACKUP_KEY, JSON.stringify(backup));
+            }
+        } catch (error) {
+            console.warn('Failed to save session backup:', error);
+        }
+    }
+
+    /**
+     * Check if there's a session to recover
+     */
+    checkSessionRecovery() {
+        try {
+            const backup = localStorage.getItem(this.SESSION_BACKUP_KEY);
+            if (!backup) return;
+
+            const data = JSON.parse(backup);
+            const ageMinutes = (Date.now() - data.timestamp) / (1000 * 60);
+
+            // Only offer recovery if session is less than 60 minutes old and has data
+            if (ageMinutes < 60 && data.conversationHistory && data.conversationHistory.length > 0) {
+                this.eventBus.emit('SESSION_RECOVERY_AVAILABLE', data);
+            } else {
+                // Clear old backup
+                localStorage.removeItem(this.SESSION_BACKUP_KEY);
+            }
+        } catch (error) {
+            console.warn('Failed to check session recovery:', error);
+            localStorage.removeItem(this.SESSION_BACKUP_KEY);
+        }
+    }
+
+    /**
+     * Recover previous session
+     * @param {Object} data - Session backup data
+     */
+    recoverSession(data) {
+        if (data.conversationHistory) {
+            this.state.set('conversationHistory', data.conversationHistory);
+        }
+        if (data.currentScenario) {
+            this.state.set('currentScenario', data.currentScenario);
+        }
+        if (data.currentCategory) {
+            this.state.set('currentCategory', data.currentCategory);
+        }
+        // Clear the backup after recovery
+        localStorage.removeItem(this.SESSION_BACKUP_KEY);
+    }
+
+    /**
+     * Decline session recovery
+     */
+    clearSessionBackup() {
+        localStorage.removeItem(this.SESSION_BACKUP_KEY);
     }
 
     /**

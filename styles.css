@@ -3223,3 +3223,150 @@ footer {
         max-width: none;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   AIRPORT CHARTS DISPLAY
+   ═══════════════════════════════════════════════════════════════ */
+
+.airport-charts-container {
+    background: var(--surface-color);
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.airport-header {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.airport-header h3 {
+    color: var(--text-color);
+    margin: 0 0 8px 0;
+    font-size: 1.3rem;
+}
+
+.airport-location {
+    color: var(--text-muted);
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.chart-section {
+    margin-bottom: 24px;
+}
+
+.chart-section h4 {
+    color: var(--primary-color);
+    margin: 0 0 12px 0;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.airport-diagram-section .diagram-iframe {
+    margin-top: 12px;
+    background: #fff;
+}
+
+.chart-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.chart-link {
+    display: inline-block;
+    padding: 8px 14px;
+    background: var(--surface-light);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-color);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: all var(--transition-fast);
+}
+
+.chart-link:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.no-diagram-notice {
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 20px;
+    text-align: center;
+    background: var(--surface-light);
+    border-radius: 8px;
+}
+
+.diagram-fallback {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.diagram-fallback .fallback-header {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 10px;
+}
+
+.diagram-fallback ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.diagram-fallback li {
+    margin-bottom: 8px;
+}
+
+.diagram-fallback a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.diagram-fallback a:hover {
+    text-decoration: underline;
+}
+
+.diagram-error {
+    background: rgba(255, 193, 7, 0.15);
+    border: 1px solid var(--warning-color);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.diagram-error p {
+    margin: 0 0 8px 0;
+    color: var(--text-color);
+}
+
+.diagram-viewer-controls {
+    margin-bottom: 16px;
+}
+
+.diagram-viewer-controls .btn-primary {
+    display: inline-block;
+    padding: 10px 20px;
+}
+
+@media (max-width: 768px) {
+    .chart-list {
+        flex-direction: column;
+    }
+
+    .chart-link {
+        text-align: center;
+    }
+
+    .airport-diagram-section .diagram-iframe {
+        height: 400px;
+    }
+}

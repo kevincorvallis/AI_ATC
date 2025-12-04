@@ -1,10 +1,49 @@
 import json
 import os
 import boto3
+import urllib.request
+import urllib.error
 from openai import OpenAI
 
 # Initialize OpenAI client
 client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
+
+# Aviation API for FAA charts
+AVIATION_API_URL = "https://api.aviationapi.com/v1/charts"
+
+# Allowed origins for CORS - add your production domain here
+ALLOWED_ORIGINS = [
+    'http://localhost:8000',
+    'http://localhost:3000',
+    'http://127.0.0.1:8000',
+    'http://127.0.0.1:3000',
+    # Add your production domain: 'https://yourdomain.com'
+]
+
+def get_cors_headers(event=None):
+    """
+    Generate CORS headers with origin validation.
+    Only allows requests from whitelisted origins.
+    """
+    origin = '*'  # Default fallback
+
+    if event:
+        # Try to get origin from request headers
+        headers = event.get('headers', {})
+        request_origin = headers.get('origin') or headers.get('Origin', '')
+
+        if request_origin in ALLOWED_ORIGINS:
+            origin = request_origin
+        elif ALLOWED_ORIGINS:
+            # If origin not in list, use first allowed origin (restrictive)
+            origin = ALLOWED_ORIGINS[0]
+
+    return {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': origin,
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS'
+    }
 
 # ATC scenario system prompts for different training scenarios
 SCENARIO_PROMPTS = {
@@ -122,14 +161,56 @@ Priority:
 Sound like a real person helping someone in trouble - calm, clear, supportive. This is an ongoing situation, not a script."""
 }
 
+def validate_custom_prompt(prompt):
+    """
+    Validate custom system prompt to prevent prompt injection attacks.
+    Returns sanitized prompt or None if invalid.
+    """
+    if not prompt:
+        return None
+
+    # Length limit to prevent abuse
+    if len(prompt) > 2000:
+        print("Custom prompt rejected: exceeds length limit")
+        return None
+
+    # Block dangerous patterns that could bypass ATC context
+    blocked_patterns = [
+        'ignore previous',
+        'ignore above',
+        'ignore all',
+        'disregard previous',
+        'disregard above',
+        'new instructions',
+        'forget everything',
+        'forget your instructions',
+        'you are now',
+        'act as',
+        'pretend to be',
+        'system:',
+        'assistant:',
+        'human:',
+        '```system',
+        '```assistant',
+    ]
+
+    prompt_lower = prompt.lower()
+    for pattern in blocked_patterns:
+        if pattern in prompt_lower:
+            print(f"Custom prompt rejected: contains blocked pattern '{pattern}'")
+            return None
+
+    return prompt
+
 def get_atc_response(scenario, conversation_history, pilot_message, custom_system_prompt=None):
     """
     Generate ATC response using OpenAI GPT-4
     """
     try:
-        # Use custom system prompt if provided, otherwise select from predefined scenarios
-        if custom_system_prompt:
-            system_prompt = custom_system_prompt
+        # Validate and use custom system prompt if provided, otherwise select from predefined scenarios
+        validated_custom_prompt = validate_custom_prompt(custom_system_prompt)
+        if validated_custom_prompt:
+            system_prompt = validated_custom_prompt
         else:
             system_prompt = SCENARIO_PROMPTS.get(scenario, SCENARIO_PROMPTS["pattern_work"])
 
@@ -244,6 +325,97 @@ IMPORTANT:
             'error': str(e)
         }
 
+def get_airport_charts(icao_code):
+    """
+    Fetch airport charts from Aviation API
+    Returns chart URLs for airport diagrams and other procedures
+    """
+    try:
+        # Validate ICAO code
+        icao_code = icao_code.upper().strip()
+        if len(icao_code) < 3 or len(icao_code) > 4:
+            return {
+                'success': False,
+                'error': 'Invalid airport code'
+            }
+
+        # Fetch from Aviation API
+        url = f"{AVIATION_API_URL}?apt={icao_code}"
+        req = urllib.request.Request(url, headers={'User-Agent': 'AI-ATC-Training/1.0'})
+
+        with urllib.request.urlopen(req, timeout=10) as response:
+            data = json.loads(response.read().decode('utf-8'))
+
+        # Check if we got any charts
+        charts = data.get(icao_code, [])
+        if not charts:
+            return {
+                'success': False,
+                'error': f'No charts found for {icao_code}'
+            }
+
+        # Find airport diagram (chart_code = "APD")
+        airport_diagram = None
+        for chart in charts:
+            if chart.get('chart_code') == 'APD':
+                airport_diagram = {
+                    'name': chart.get('chart_name', 'Airport Diagram'),
+                    'pdf_url': chart.get('pdf_path'),
+                    'pdf_name': chart.get('pdf_name')
+                }
+                break
+
+        # Organize charts by type
+        organized_charts = {
+            'airport_diagram': airport_diagram,
+            'airport_info': {
+                'name': charts[0].get('airport_name', icao_code),
+                'city': charts[0].get('city', ''),
+                'state': charts[0].get('state', ''),
+                'icao': icao_code,
+                'faa_ident': charts[0].get('faa_ident', '')
+            },
+            'approaches': [],
+            'departures': [],
+            'arrivals': [],
+            'minimums': []
+        }
+
+        # Categorize charts
+        for chart in charts:
+            chart_info = {
+                'name': chart.get('chart_name'),
+                'pdf_url': chart.get('pdf_path'),
+                'code': chart.get('chart_code')
+            }
+            code = chart.get('chart_code', '')
+            if code == 'IAP':
+                organized_charts['approaches'].append(chart_info)
+            elif code == 'DP':
+                organized_charts['departures'].append(chart_info)
+            elif code == 'STAR':
+                organized_charts['arrivals'].append(chart_info)
+            elif code in ['MIN', 'HOT']:
+                organized_charts['minimums'].append(chart_info)
+
+        return {
+            'success': True,
+            'charts': organized_charts
+        }
+
+    except urllib.error.URLError as e:
+        print(f"Error fetching charts: {str(e)}")
+        return {
+            'success': False,
+            'error': 'Failed to fetch charts from Aviation API'
+        }
+    except Exception as e:
+        print(f"Error getting airport charts: {str(e)}")
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
 def lambda_handler(event, context):
     """
     AWS Lambda handler function
@@ -258,12 +430,7 @@ def lambda_handler(event, context):
             if not user_prompt:
                 return {
                     'statusCode': 400,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*',
-                        'Access-Control-Allow-Headers': 'Content-Type',
-                        'Access-Control-Allow-Methods': 'POST, OPTIONS'
-                    },
+                    'headers': get_cors_headers(event),
                     'body': json.dumps({
                         'success': False,
                         'error': 'No prompt provided'
@@ -274,12 +441,28 @@ def lambda_handler(event, context):
 
             return {
                 'statusCode': 200,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Headers': 'Content-Type',
-                    'Access-Control-Allow-Methods': 'POST, OPTIONS'
-                },
+                'headers': get_cors_headers(event),
+                'body': json.dumps(result)
+            }
+
+        # Check if this is a chart request
+        if body.get('action') == 'get_charts':
+            airport_code = body.get('airport', '')
+            if not airport_code:
+                return {
+                    'statusCode': 400,
+                    'headers': get_cors_headers(event),
+                    'body': json.dumps({
+                        'success': False,
+                        'error': 'No airport code provided'
+                    })
+                }
+
+            result = get_airport_charts(airport_code)
+
+            return {
+                'statusCode': 200,
+                'headers': get_cors_headers(event),
                 'body': json.dumps(result)
             }
 
@@ -293,12 +476,7 @@ def lambda_handler(event, context):
         if not pilot_message:
             return {
                 'statusCode': 400,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Headers': 'Content-Type',
-                    'Access-Control-Allow-Methods': 'POST, OPTIONS'
-                },
+                'headers': get_cors_headers(event),
                 'body': json.dumps({
                     'success': False,
                     'error': 'No message provided'
@@ -307,29 +485,19 @@ def lambda_handler(event, context):
 
         # Get ATC response (with optional custom system prompt)
         result = get_atc_response(scenario, conversation_history, pilot_message, custom_system_prompt)
-        
+
         # Return response
         return {
             'statusCode': 200,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'Content-Type',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS'
-            },
+            'headers': get_cors_headers(event),
             'body': json.dumps(result)
         }
-        
+
     except Exception as e:
         print(f"Lambda handler error: {str(e)}")
         return {
             'statusCode': 500,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'Content-Type',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS'
-            },
+            'headers': get_cors_headers(event),
             'body': json.dumps({
                 'success': False,
                 'error': 'Internal server error'

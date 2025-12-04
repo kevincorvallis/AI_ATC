@@ -7,6 +7,8 @@ class CustomScenarioMode {
         this.templates = this.createTemplates();
         this.examplePrompts = this.createExamplePrompts();
         this.recentAirports = this.loadRecentAirports();
+        this.isGenerating = false; // Prevent duplicate API calls
+        this.currentAbortController = null; // For cancelling in-flight requests
     }
 
     loadRecentAirports() {
@@ -27,6 +29,14 @@ class CustomScenarioMode {
             console.error('Failed to save recent airports:', e);
         }
         this.updateRecentAirportsUI();
+    }
+
+    // Sanitize user input to prevent XSS attacks
+    sanitizeHTML(str) {
+        if (str === null || str === undefined) return '';
+        const div = document.createElement('div');
+        div.textContent = String(str);
+        return div.innerHTML;
     }
 
     updateRecentAirportsUI() {
@@ -552,6 +562,12 @@ Respond as a controller would in this situation.`
     }
 
     async startCustomScenario() {
+        // Prevent duplicate requests
+        if (this.isGenerating) {
+            console.log('Scenario generation already in progress');
+            return;
+        }
+
         const promptInput = document.getElementById('customPrompt');
         const userPrompt = promptInput.value.trim();
 
@@ -559,6 +575,25 @@ Respond as a controller would in this situation.`
             alert('Please enter a scenario description');
             return;
         }
+
+        // Input validation - check length
+        if (userPrompt.length < 10) {
+            alert('Please provide a more detailed scenario description (at least 10 characters)');
+            return;
+        }
+        if (userPrompt.length > 1000) {
+            alert('Scenario description is too long. Please keep it under 1000 characters.');
+            return;
+        }
+
+        // Cancel any previous in-flight request
+        if (this.currentAbortController) {
+            this.currentAbortController.abort();
+        }
+        this.currentAbortController = new AbortController();
+
+        // Set generating flag
+        this.isGenerating = true;
 
         // Show loading state
         const startButton = document.getElementById('startCustomScenario');
@@ -569,7 +604,7 @@ Respond as a controller would in this situation.`
 
         try {
             // Call OpenAI API to generate scenario
-            const generatedScenario = await this.generateScenarioWithAI(userPrompt);
+            const generatedScenario = await this.generateScenarioWithAI(userPrompt, this.currentAbortController.signal);
 
             if (!generatedScenario) {
                 // Fallback to local parsing if API fails
@@ -599,20 +634,25 @@ Respond as a controller would in this situation.`
 
             this.finalizeScenario(userPrompt, parsedData, flightDetails, systemPrompt);
         } finally {
-            // Reset button
+            // Reset button and generation state
+            this.isGenerating = false;
+            this.currentAbortController = null;
             startButton.disabled = false;
             startButton.textContent = originalButtonText;
             startButton.classList.remove('loading');
         }
     }
 
-    async generateScenarioWithAI(userPrompt) {
+    async generateScenarioWithAI(userPrompt, signal = null) {
         try {
             // Check if API endpoint is configured
             if (!API_ENDPOINT || API_ENDPOINT === 'YOUR_API_ENDPOINT_HERE/atc') {
                 console.log('API not configured, using local parsing');
                 return null;
             }
+
+            // Create timeout for request (20 second timeout for scenario generation)
+            const controller = signal ? { signal } : {};
 
             const response = await fetch(API_ENDPOINT, {
                 method: 'POST',
@@ -622,7 +662,8 @@ Respond as a controller would in this situation.`
                 body: JSON.stringify({
                     action: 'generate_scenario',
                     prompt: userPrompt
-                })
+                }),
+                ...controller
             });
 
             if (!response.ok) {
@@ -690,15 +731,16 @@ Respond as a controller would in this situation.`
         // AI returns: callsign, squawk, souls_on_board, fuel_remaining
         // Local returns: callsign in flightDetails
 
-        const callsign = parsedData.callsign || flightDetails.callsign || 'N12345';
-        const aircraftType = parsedData.aircraft_type || 'Cessna 172';
-        const squawk = parsedData.squawk || flightDetails.squawk || '1200';
-        const soulsOnBoard = parsedData.souls_on_board || flightDetails.souls_on_board || 1;
+        // Sanitize all user-influenced values to prevent XSS
+        const callsign = this.sanitizeHTML(parsedData.callsign || flightDetails.callsign || 'N12345');
+        const aircraftType = this.sanitizeHTML(parsedData.aircraft_type || 'Cessna 172');
+        const squawk = this.sanitizeHTML(parsedData.squawk || flightDetails.squawk || '1200');
+        const soulsOnBoard = this.sanitizeHTML(parsedData.souls_on_board || flightDetails.souls_on_board || 1);
 
         // Handle fuel format from both sources
         let fuelRemaining;
         if (parsedData.fuel_remaining) {
-            fuelRemaining = parsedData.fuel_remaining; // AI format: "3+45"
+            fuelRemaining = this.sanitizeHTML(parsedData.fuel_remaining); // AI format: "3+45"
         } else if (flightDetails.fuel_hours !== undefined) {
             fuelRemaining = `${flightDetails.fuel_hours}+${(flightDetails.fuel_minutes || 0).toString().padStart(2, '0')}`;
         } else {
@@ -707,19 +749,19 @@ Respond as a controller would in this situation.`
 
         // Airport info
         const airport = parsedData.airport || flightDetails.airport || null;
-        const airportName = parsedData.airport_name || parsedData.airport || 'Unknown Airport';
-        const tower = parsedData.tower || flightDetails.frequency || '118.300';
-        const ground = parsedData.ground || flightDetails.ground_freq || '121.900';
-        const departure = parsedData.departure || flightDetails.departure_freq || '121.700';
-        const atis = parsedData.atis || flightDetails.atis || 'A';
-        const runway = parsedData.runway || flightDetails.runway || '27';
+        const airportName = this.sanitizeHTML(parsedData.airport_name || parsedData.airport || 'Unknown Airport');
+        const tower = this.sanitizeHTML(parsedData.tower || flightDetails.frequency || '118.300');
+        const ground = this.sanitizeHTML(parsedData.ground || flightDetails.ground_freq || '121.900');
+        const departure = this.sanitizeHTML(parsedData.departure || flightDetails.departure_freq || '121.700');
+        const atis = this.sanitizeHTML(parsedData.atis || flightDetails.atis || 'A');
+        const runway = this.sanitizeHTML(parsedData.runway || flightDetails.runway || '27');
 
         // Weather & conditions
-        const weather = parsedData.weather || 'VFR';
-        const wind = parsedData.wind || '270 at 8 kts';
-        const altitude = parsedData.altitude || null;
+        const weather = this.sanitizeHTML(parsedData.weather || 'VFR');
+        const wind = this.sanitizeHTML(parsedData.wind || '270 at 8 kts');
+        const altitude = parsedData.altitude ? this.sanitizeHTML(parsedData.altitude) : null;
 
-        const scenarioDescription = parsedData.scenario_description || userPrompt;
+        const scenarioDescription = this.sanitizeHTML(parsedData.scenario_description || userPrompt);
         const clearanceSection = this.generateClearanceInfo(parsedData, { callsign, runway, atis });
 
         return `
@@ -977,38 +1019,64 @@ Respond as a controller would in this situation.`
     }
 
     getCurrentAIRACCycle() {
-        // AIRAC cycles with official effective dates for 2025
-        const airacCycles = [
-            { cycle: 2501, effectiveDate: new Date('2025-01-23') },
-            { cycle: 2502, effectiveDate: new Date('2025-02-20') },
-            { cycle: 2503, effectiveDate: new Date('2025-03-20') },
-            { cycle: 2504, effectiveDate: new Date('2025-04-17') },
-            { cycle: 2505, effectiveDate: new Date('2025-05-15') },
-            { cycle: 2506, effectiveDate: new Date('2025-06-12') },
-            { cycle: 2507, effectiveDate: new Date('2025-07-10') },
-            { cycle: 2508, effectiveDate: new Date('2025-08-07') },
-            { cycle: 2509, effectiveDate: new Date('2025-09-04') },
-            { cycle: 2510, effectiveDate: new Date('2025-10-02') },
-            { cycle: 2511, effectiveDate: new Date('2025-10-30') },
-            { cycle: 2512, effectiveDate: new Date('2025-11-27') },
-            { cycle: 2513, effectiveDate: new Date('2025-12-25') }
-        ];
+        // Dynamic AIRAC cycle calculation
+        // AIRAC cycles follow a fixed 28-day pattern starting from a known epoch
+        // Reference: January 4, 2018 was the start of cycle 1801
+
+        const epochDate = new Date(Date.UTC(2018, 0, 4)); // January 4, 2018 UTC
+        const cycleDays = 28;
+        const msPerDay = 24 * 60 * 60 * 1000;
 
         const now = new Date();
 
-        // Find the most recent effective cycle
-        let currentCycle = 2511; // Default fallback
-        for (let i = airacCycles.length - 1; i >= 0; i--) {
-            if (now >= airacCycles[i].effectiveDate) {
-                currentCycle = airacCycles[i].cycle;
-                break;
+        // Calculate days since epoch
+        const daysSinceEpoch = Math.floor((now - epochDate) / msPerDay);
+
+        // Calculate which cycle we're in since the epoch
+        const cyclesSinceEpoch = Math.floor(daysSinceEpoch / cycleDays);
+
+        // Calculate the start date of the current cycle
+        const currentCycleStart = new Date(epochDate.getTime() + (cyclesSinceEpoch * cycleDays * msPerDay));
+
+        // Determine the year and cycle number
+        // Each year typically has 13 cycles (364 days), but some years have 14 cycles
+        // We need to count how many cycles have passed since the start of the year
+
+        const currentCycleYear = currentCycleStart.getUTCFullYear();
+
+        // Find the first cycle of the current year (first one that starts on or after Jan 1)
+        let firstCycleOfYear = new Date(epochDate);
+        let cycleCount = 0;
+
+        while (firstCycleOfYear.getUTCFullYear() < currentCycleYear) {
+            firstCycleOfYear = new Date(firstCycleOfYear.getTime() + (cycleDays * msPerDay));
+            cycleCount++;
+        }
+
+        // If the first cycle of the year starts before Jan 1, it belongs to the previous year
+        // The next cycle is the first of the new year
+        if (firstCycleOfYear.getUTCFullYear() === currentCycleYear &&
+            firstCycleOfYear.getUTCMonth() === 0 && firstCycleOfYear.getUTCDate() < 15) {
+            // This cycle starts early enough to be cycle 01 of this year
+        } else if (firstCycleOfYear.getUTCFullYear() < currentCycleYear) {
+            // Move to first cycle that starts in the current year
+            while (firstCycleOfYear.getUTCFullYear() < currentCycleYear) {
+                firstCycleOfYear = new Date(firstCycleOfYear.getTime() + (cycleDays * msPerDay));
             }
         }
 
-        return currentCycle.toString();
+        // Calculate which cycle number within the year
+        const daysSinceFirstCycle = Math.floor((currentCycleStart - firstCycleOfYear) / msPerDay);
+        const cycleNumber = Math.floor(daysSinceFirstCycle / cycleDays) + 1;
+
+        // Format as YYCC (e.g., 2501 for 2025 cycle 01)
+        const yearSuffix = currentCycleYear % 100;
+        const cycleStr = cycleNumber.toString().padStart(2, '0');
+
+        return `${yearSuffix}${cycleStr}`;
     }
 
-    loadAirportDiagram(cycleOverride = null) {
+    async loadAirportDiagram(cycleOverride = null) {
         const searchInput = document.getElementById('airportDiagramSearch');
         const icao = searchInput.value.trim().toUpperCase();
 
@@ -1021,60 +1089,148 @@ Respond as a controller would in this situation.`
         this.saveRecentAirport(icao);
 
         const viewer = document.getElementById('airportDiagramViewer');
-        viewer.innerHTML = '<p class="loading">Loading airport diagram...</p>';
+        viewer.innerHTML = '<p class="loading">Loading airport charts for ' + this.sanitizeHTML(icao) + '...</p>';
 
-        // Automatically calculate current AIRAC cycle or use override
-        const currentCycle = cycleOverride || this.getCurrentAIRACCycle();
+        try {
+            // Fetch charts from our Lambda API
+            const response = await fetch(API_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'get_charts',
+                    airport: icao
+                })
+            });
 
-        // Prepare fallback cycles
-        const prevCycle = (parseInt(currentCycle) - 1).toString();
-        const nextCycle = (parseInt(currentCycle) + 1).toString();
+            const data = await response.json();
 
-        const diagramUrl = `https://aeronav.faa.gov/d-tpp/${currentCycle}/00000AD.PDF#nameddest=${icao}`;
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to fetch charts');
+            }
 
-        viewer.innerHTML = `
-            <div class="diagram-viewer-controls">
-                <a href="${diagramUrl}" target="_blank" class="btn-secondary">
-                    Open Full Diagram in New Tab
-                </a>
-                <p class="diagram-note">Airport diagrams are provided by the FAA (AIRAC Cycle: ${currentCycle}) and updated every 28 days.</p>
-            </div>
-            <iframe
-                src="${diagramUrl}"
-                class="diagram-iframe"
-                title="Airport Diagram for ${icao}"
-                onload="this.style.opacity = 1; this.dataset.loaded = 'true';"
-                onerror="if (!this.dataset.retried) { this.dataset.retried = 'true'; } else { this.parentElement.querySelector('.diagram-error').style.display = 'block'; this.style.display = 'none'; }"
-            ></iframe>
-            <div class="diagram-error" style="display: none; padding: 20px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin-top: 10px;">
-                <p><strong>⚠ Diagram failed to load</strong></p>
-                <p>The diagram for <strong>${icao}</strong> may not be available in AIRAC cycle ${currentCycle}.</p>
-                <p>Try these cycle alternatives:</p>
-                <div style="margin: 12px 0;">
-                    <button class="btn-secondary" onclick="customMode.loadAirportDiagram('${prevCycle}')" style="margin: 4px;">
-                        Try Cycle ${prevCycle}
-                    </button>
-                    <button class="btn-secondary" onclick="customMode.loadAirportDiagram('${nextCycle}')" style="margin: 4px;">
-                        Try Cycle ${nextCycle}
-                    </button>
+            const charts = data.charts;
+            const airportInfo = charts.airport_info;
+            const airportDiagram = charts.airport_diagram;
+
+            // Build the chart display
+            let html = `
+                <div class="airport-charts-container">
+                    <div class="airport-header">
+                        <h3>${this.sanitizeHTML(airportInfo.name)} (${this.sanitizeHTML(airportInfo.icao)})</h3>
+                        <p class="airport-location">${this.sanitizeHTML(airportInfo.city)}, ${this.sanitizeHTML(airportInfo.state)}</p>
+                    </div>
+            `;
+
+            // Airport Diagram Section
+            if (airportDiagram && airportDiagram.pdf_url) {
+                html += `
+                    <div class="chart-section airport-diagram-section">
+                        <h4>Airport Diagram</h4>
+                        <div class="diagram-viewer-controls">
+                            <a href="${this.sanitizeHTML(airportDiagram.pdf_url)}" target="_blank" class="btn-primary">
+                                Open Airport Diagram (PDF)
+                            </a>
+                        </div>
+                        <iframe
+                            src="${this.sanitizeHTML(airportDiagram.pdf_url)}"
+                            class="diagram-iframe"
+                            title="Airport Diagram for ${this.sanitizeHTML(icao)}"
+                            style="width: 100%; height: 600px; border: 1px solid #ccc; border-radius: 4px;"
+                        ></iframe>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="chart-section">
+                        <p class="no-diagram-notice">No airport diagram available for ${this.sanitizeHTML(icao)}</p>
+                    </div>
+                `;
+            }
+
+            // Approaches Section
+            if (charts.approaches && charts.approaches.length > 0) {
+                html += `
+                    <div class="chart-section">
+                        <h4>Approach Procedures (${charts.approaches.length})</h4>
+                        <div class="chart-list">
+                `;
+                for (const chart of charts.approaches) {
+                    html += `
+                        <a href="${this.sanitizeHTML(chart.pdf_url)}" target="_blank" class="chart-link">
+                            ${this.sanitizeHTML(chart.name)}
+                        </a>
+                    `;
+                }
+                html += '</div></div>';
+            }
+
+            // Departures Section
+            if (charts.departures && charts.departures.length > 0) {
+                html += `
+                    <div class="chart-section">
+                        <h4>Departure Procedures (${charts.departures.length})</h4>
+                        <div class="chart-list">
+                `;
+                for (const chart of charts.departures) {
+                    html += `
+                        <a href="${this.sanitizeHTML(chart.pdf_url)}" target="_blank" class="chart-link">
+                            ${this.sanitizeHTML(chart.name)}
+                        </a>
+                    `;
+                }
+                html += '</div></div>';
+            }
+
+            // Arrivals Section
+            if (charts.arrivals && charts.arrivals.length > 0) {
+                html += `
+                    <div class="chart-section">
+                        <h4>Arrival Procedures (${charts.arrivals.length})</h4>
+                        <div class="chart-list">
+                `;
+                for (const chart of charts.arrivals) {
+                    html += `
+                        <a href="${this.sanitizeHTML(chart.pdf_url)}" target="_blank" class="chart-link">
+                            ${this.sanitizeHTML(chart.name)}
+                        </a>
+                    `;
+                }
+                html += '</div></div>';
+            }
+
+            // Alternative sources
+            html += `
+                <div class="diagram-fallback">
+                    <p class="fallback-header">Additional Resources:</p>
+                    <ul>
+                        <li><a href="https://www.airnav.com/airport/${this.sanitizeHTML(icao)}" target="_blank">AirNav - ${this.sanitizeHTML(icao)}</a> - Airport information</li>
+                        <li><a href="https://skyvector.com/airport/${this.sanitizeHTML(icao)}" target="_blank">SkyVector - ${this.sanitizeHTML(icao)}</a> - Interactive charts</li>
+                    </ul>
                 </div>
-            </div>
-            <div class="diagram-fallback">
-                <p class="fallback-header">Alternative diagram sources:</p>
-                <ul>
-                    <li><a href="https://www.airnav.com/airport/${icao}" target="_blank">AirNav - ${icao}</a> - Comprehensive airport information</li>
-                    <li><a href="https://skyvector.com/airport/${icao}" target="_blank">SkyVector - ${icao}</a> - Interactive aviation charts</li>
-                    <li><a href="https://www.faa.gov/air_traffic/flight_info/aeronav/digital_products/dtpp/search/" target="_blank">FAA d-TPP Search</a> - Manual diagram search</li>
-                    <li><a href="https://chartfox.org/airport/${icao}" target="_blank">ChartFox - ${icao}</a> - Free aviation charts</li>
-                </ul>
-            </div>
-        `;
+            `;
 
-        // Add CSS for smooth loading
-        const iframe = viewer.querySelector('.diagram-iframe');
-        if (iframe) {
-            iframe.style.opacity = '0';
-            iframe.style.transition = 'opacity 0.3s ease-in';
+            html += '</div>';
+            viewer.innerHTML = html;
+
+        } catch (error) {
+            console.error('Error loading airport charts:', error);
+
+            // Show error with fallback options
+            viewer.innerHTML = `
+                <div class="diagram-error" style="padding: 20px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px;">
+                    <p><strong>Unable to load charts for ${this.sanitizeHTML(icao)}</strong></p>
+                    <p>${this.sanitizeHTML(error.message)}</p>
+                </div>
+                <div class="diagram-fallback">
+                    <p class="fallback-header">Try these alternative sources:</p>
+                    <ul>
+                        <li><a href="https://www.airnav.com/airport/${this.sanitizeHTML(icao)}" target="_blank">AirNav - ${this.sanitizeHTML(icao)}</a> - Comprehensive airport information</li>
+                        <li><a href="https://skyvector.com/airport/${this.sanitizeHTML(icao)}" target="_blank">SkyVector - ${this.sanitizeHTML(icao)}</a> - Interactive aviation charts</li>
+                        <li><a href="https://www.faa.gov/air_traffic/flight_info/aeronav/digital_products/dtpp/search/" target="_blank">FAA d-TPP Search</a> - Manual diagram search</li>
+                        <li><a href="https://chartfox.org/airport/${this.sanitizeHTML(icao)}" target="_blank">ChartFox - ${this.sanitizeHTML(icao)}</a> - Free aviation charts</li>
+                    </ul>
+                </div>
+            `;
         }
     }
 
