@@ -7,10 +7,16 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Radar Background Animation -->
+    <div class="radar-bg">
+        <div class="radar-sweep"></div>
+        <div class="radar-grid"></div>
+    </div>
+
     <div class="container">
         <!-- Navigation -->
         <nav class="nav-bar">
@@ -24,8 +30,15 @@
 
         <!-- Header -->
         <header>
-            <h1>ATC Training System</h1>
-            <p class="subtitle">AI-powered ATC communication training</p>
+            <div class="header-indicator"></div>
+            <h1>
+                <span class="header-code">ATC-SIM</span>
+                <span class="header-title">Air Traffic Control Training</span>
+            </h1>
+            <p class="subtitle">
+                <span class="status-dot"></span>
+                AI-powered communication training system
+            </p>
         </header>
 
         <!-- View 1: Category Selection (Home) -->
