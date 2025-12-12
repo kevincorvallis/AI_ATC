@@ -56,7 +56,7 @@
             </h1>
             <p class="subtitle">
                 <span class="status-dot"></span>
-                Real-time simulation | AI-powered voice training | Live ATC monitoring
+                Real-time simulation | AI-powered ATC training | Live ATC monitoring
             </p>
         </header>
 
@@ -82,7 +82,7 @@
                         </div>
                     </div>
                     <h3>AI Training Mode</h3>
-                    <p>Interactive voice communication practice with AI-powered air traffic control</p>
+                    <p>Interactive communication practice with AI-powered air traffic control</p>
                     <div class="card-status">ACTIVE</div>
                 </div>
 
@@ -275,22 +275,25 @@
             <div class="conversation-container">
                 <div class="conversation" id="conversation">
                     <div class="message system-message">
-                        <p>Ready for training. Press and hold "Push to Talk" to begin.</p>
+                        <p>Ready for training. Type your transmission below or click a suggestion to begin.</p>
                     </div>
                 </div>
             </div>
 
             <!-- Controls -->
             <div class="controls">
-                <button class="ptt-button" id="pttButton" aria-label="Push to talk - hold to speak">
-                    <span class="ptt-icon">🎙️</span>
-                    <span class="ptt-text">Push to Talk</span>
-                    <span class="ptt-hint">(Hold to speak)</span>
-                </button>
-                <div class="keyboard-hint">
-                    <span>or press</span>
-                    <kbd class="kbd">Space</kbd>
-                    <span>to transmit</span>
+                <!-- Scenario Suggestions -->
+                <div class="suggestions-container" id="suggestionsContainer">
+                    <p class="suggestions-label">Quick suggestions (click to use):</p>
+                    <div class="suggestions-list" id="suggestionsList">
+                        <!-- Populated by JavaScript based on scenario -->
+                    </div>
+                </div>
+
+                <!-- Text Input -->
+                <div class="text-input-container">
+                    <input type="text" id="pilotInput" class="pilot-input" placeholder="Type your transmission..." autocomplete="off" />
+                    <button class="transmit-button" id="transmitButton">Transmit</button>
                 </div>
                 <div class="status" id="status">Ready</div>
             </div>

@@ -13,7 +13,8 @@
       "Bash(aws lambda list-functions:*)",
       "Bash(python3:*)",
       "Bash(aws logs describe-log-streams:*)",
-      "Bash(aws logs get-log-events:*)"
+      "Bash(aws logs get-log-events:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

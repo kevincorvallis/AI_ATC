@@ -1,94 +1,128 @@
 // AI ATC Training System - Main Application Logic
 
+// Scenario-specific suggestions for quick transmission
+const SCENARIO_SUGGESTIONS = {
+    pattern_work: {
+        pattern_first_solo: [
+            "Metro Tower, Cessna 12345, ready for departure runway 27, remaining in the pattern",
+            "Metro Tower, Cessna 12345, left downwind runway 27",
+            "Metro Tower, Cessna 12345, turning left base runway 27, full stop"
+        ],
+        pattern_touch_go: [
+            "Metro Tower, Cessna 12345, left downwind runway 27, touch and go",
+            "Metro Tower, Cessna 12345, turning left base runway 27",
+            "Metro Tower, Cessna 12345, going around"
+        ],
+        pattern_crosswind: [
+            "Metro Tower, Cessna 12345, ready for departure runway 27",
+            "Metro Tower, Cessna 12345, left downwind runway 27, request wind check",
+            "Metro Tower, Cessna 12345, short final runway 27, full stop"
+        ],
+        pattern_busy: [
+            "Metro Tower, Cessna 12345, left downwind runway 27, number 2",
+            "Metro Tower, Cessna 12345, traffic in sight",
+            "Metro Tower, Cessna 12345, extending downwind"
+        ],
+        pattern_night: [
+            "Metro Tower, Cessna 12345, ready for departure runway 27, night pattern",
+            "Metro Tower, Cessna 12345, left downwind runway 27, runway in sight",
+            "Metro Tower, Cessna 12345, short final runway 27, full stop"
+        ]
+    },
+    ground_operations: {
+        ground_first_taxi: [
+            "Metro Ground, Cessna 12345, at the FBO, ready to taxi with information Alpha",
+            "Cessna 12345, holding short runway 27",
+            "Metro Ground, Cessna 12345, clear of runway 27"
+        ],
+        ground_complex_taxi: [
+            "Metro Ground, Cessna 12345, at terminal 2, taxi to runway 27 with information Bravo",
+            "Cessna 12345, confirm taxi via Alpha, Bravo, hold short runway 27",
+            "Metro Ground, Cessna 12345, request progressive taxi"
+        ],
+        ground_runway_crossing: [
+            "Metro Ground, Cessna 12345, holding short runway 27",
+            "Cessna 12345, crossing runway 27",
+            "Metro Ground, Cessna 12345, runway 27 clear"
+        ],
+        ground_busy_ramp: [
+            "Metro Ground, Cessna 12345, at the west ramp, ready to taxi",
+            "Cessna 12345, holding position",
+            "Metro Ground, Cessna 12345, traffic in sight on the ramp"
+        ],
+        ground_progressive: [
+            "Metro Ground, Cessna 12345, unfamiliar, request progressive taxi to runway 27",
+            "Cessna 12345, roger, turning left",
+            "Cessna 12345, holding short runway 27"
+        ]
+    },
+    flight_following: {
+        ff_initial_request: [
+            "Seattle Center, Cessna 12345, request VFR flight following",
+            "Cessna 12345, level 4,500, destination Portland",
+            "Cessna 12345, squawking 4521"
+        ],
+        ff_position_reports: [
+            "Seattle Center, Cessna 12345, position report",
+            "Cessna 12345, level 5,500, 30 miles south of Seattle",
+            "Cessna 12345, request altitude change to 6,500"
+        ],
+        ff_traffic_advisories: [
+            "Cessna 12345, traffic in sight",
+            "Cessna 12345, looking for traffic",
+            "Cessna 12345, negative contact, request vectors"
+        ],
+        ff_class_b_transition: [
+            "Seattle Approach, Cessna 12345, request Class Bravo transition",
+            "Cessna 12345, squawking 0452",
+            "Cessna 12345, cleared through Class Bravo as requested"
+        ],
+        ff_frequency_change: [
+            "Cessna 12345, ready to copy new frequency",
+            "Cessna 12345, contact Seattle Center 124.5",
+            "Seattle Center, Cessna 12345, level 5,500"
+        ]
+    },
+    emergency: {
+        emerg_engine_failure: [
+            "Mayday mayday mayday, Cessna 12345, engine failure",
+            "Cessna 12345, 2 souls on board, 2 hours fuel",
+            "Cessna 12345, airport in sight, request direct"
+        ],
+        emerg_lost_comms: [
+            "Metro Tower, Cessna 12345, radio check",
+            "Metro Tower, Cessna 12345, if you read, ident",
+            "Cessna 12345, squawking 7600"
+        ],
+        emerg_low_fuel: [
+            "Metro Tower, Cessna 12345, minimum fuel",
+            "Cessna 12345, 20 minutes fuel remaining",
+            "Cessna 12345, request priority handling"
+        ],
+        emerg_weather_diversion: [
+            "Seattle Center, Cessna 12345, request diversion due weather",
+            "Cessna 12345, request vectors to nearest suitable airport",
+            "Cessna 12345, weather ahead, unable direct"
+        ],
+        emerg_medical: [
+            "Mayday mayday mayday, Cessna 12345, medical emergency",
+            "Cessna 12345, passenger medical emergency, request immediate landing",
+            "Cessna 12345, 3 souls on board, need ambulance on arrival"
+        ]
+    }
+};
+
 class ATCTrainingApp {
     constructor() {
         this.currentCategory = null;
         this.currentScenario = null;
         this.currentScenarioId = null;
         this.conversationHistory = [];
-        this.recognition = null;
         this.synthesis = window.speechSynthesis;
-        this.isListening = false;
         this.isSpeaking = false;
+        this.isWaitingForResponse = false;
 
-        this.initSpeechRecognition();
         this.initEventListeners();
-    }
-
-    initSpeechRecognition() {
-        // Check for browser support
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        
-        if (!SpeechRecognition) {
-            alert('Speech recognition not supported in this browser. Please use Chrome or Edge.');
-            return;
-        }
-
-        this.recognition = new SpeechRecognition();
-        this.recognition.continuous = false;
-        this.recognition.interimResults = true; // Enable real-time transcription
-        this.recognition.lang = 'en-US';
-
-        this.recognition.onstart = () => {
-            this.isListening = true;
-            this.updateStatus('Listening... Speak now');
-            const pttBtn = document.getElementById('pttButton');
-            const signalInd = document.getElementById('signalIndicator');
-            if (pttBtn) pttBtn.classList.add('active');
-            if (signalInd) signalInd.classList.add('transmitting');
-
-            // Show live transcription box
-            this.showLiveTranscription();
-        };
-
-        this.recognition.onresult = (event) => {
-            let interimTranscript = '';
-            let finalTranscript = '';
-
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                const transcript = event.results[i][0].transcript;
-                if (event.results[i].isFinal) {
-                    finalTranscript += transcript;
-                } else {
-                    interimTranscript += transcript;
-                }
-            }
-
-            // Update live transcription display
-            if (interimTranscript) {
-                this.updateLiveTranscription(interimTranscript);
-            }
-
-            // When final result, send to ATC
-            if (finalTranscript) {
-                this.hideLiveTranscription();
-                this.handlePilotTransmission(finalTranscript);
-            }
-        };
-
-        this.recognition.onerror = (event) => {
-            console.error('Speech recognition error:', event.error);
-            this.updateStatus(`Error: ${event.error}`);
-            this.isListening = false;
-            const pttBtn = document.getElementById('pttButton');
-            const signalInd = document.getElementById('signalIndicator');
-            if (pttBtn) pttBtn.classList.remove('active');
-            if (signalInd) signalInd.classList.remove('transmitting');
-            this.hideLiveTranscription();
-            this.showToast('Speech recognition error. Please try again.', 'error');
-        };
-
-        this.recognition.onend = () => {
-            this.isListening = false;
-            const pttBtn = document.getElementById('pttButton');
-            const signalInd = document.getElementById('signalIndicator');
-            if (pttBtn) pttBtn.classList.remove('active');
-            if (signalInd) signalInd.classList.remove('transmitting');
-            this.hideLiveTranscription();
-            if (!this.isSpeaking) {
-                this.updateStatus('Ready');
-            }
-        };
     }
 
     initEventListeners() {
@@ -161,43 +195,22 @@ class ATCTrainingApp {
             });
         });
 
-        // PTT button (mouse)
-        const pttButton = document.getElementById('pttButton');
+        // Text input for transmissions
+        const pilotInput = document.getElementById('pilotInput');
+        const transmitButton = document.getElementById('transmitButton');
 
-        // Add accessibility attributes to PTT button
-        if (pttButton) {
-            pttButton.setAttribute('aria-label', 'Push to talk - Hold to speak, release to transmit');
-            pttButton.setAttribute('aria-pressed', 'false');
-            pttButton.setAttribute('role', 'button');
+        if (transmitButton) {
+            transmitButton.addEventListener('click', () => this.handleTextTransmission());
         }
 
-        pttButton.addEventListener('mousedown', () => this.startListening());
-        pttButton.addEventListener('mouseup', () => this.stopListening());
-        pttButton.addEventListener('mouseleave', () => this.stopListening());
-
-        // PTT button (touch)
-        pttButton.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            this.startListening();
-        });
-        pttButton.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            this.stopListening();
-        });
-
-        // Spacebar for PTT
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' && !this.isListening && this.currentScenario) {
-                e.preventDefault();
-                this.startListening();
-            }
-        });
-        document.addEventListener('keyup', (e) => {
-            if (e.code === 'Space' && this.isListening) {
-                e.preventDefault();
-                this.stopListening();
-            }
-        });
+        if (pilotInput) {
+            pilotInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.handleTextTransmission();
+                }
+            });
+        }
 
         // Change scenario button
         document.getElementById('changeScenario').addEventListener('click', () => {
@@ -266,11 +279,14 @@ class ATCTrainingApp {
                     <p style="margin: 0;"><strong>💡 Tip:</strong> ${scenarioDetails.tips}</p>
                 </div>
                 ${modeMessage}
-                <p style="margin-top: 12px;">Press and hold "Push to Talk" or spacebar to begin communication.</p>
+                <p style="margin-top: 12px;">Type your transmission below or click a suggestion to begin.</p>
             </div>
         `;
 
         conversation.innerHTML = scenarioInfo;
+
+        // Populate suggestions for this scenario
+        this.populateSuggestions(category, scenarioId);
 
         // Show communication interface
         document.querySelector('.main-menu').style.display = 'none';
@@ -292,28 +308,48 @@ class ATCTrainingApp {
         this.conversationHistory = [];
     }
 
-    startListening() {
-        if (!this.currentScenario || this.isListening || this.isSpeaking) {
-            return;
-        }
+    handleTextTransmission() {
+        const pilotInput = document.getElementById('pilotInput');
+        if (!pilotInput) return;
 
-        try {
-            this.recognition.start();
-            // Update accessibility state
-            const pttButton = document.getElementById('pttButton');
-            if (pttButton) pttButton.setAttribute('aria-pressed', 'true');
-        } catch (error) {
-            console.error('Error starting recognition:', error);
-        }
+        const text = pilotInput.value.trim();
+        if (!text || this.isWaitingForResponse || this.isSpeaking) return;
+
+        // Clear input
+        pilotInput.value = '';
+
+        // Process the transmission
+        this.handlePilotTransmission(text);
     }
 
-    stopListening() {
-        if (this.isListening) {
-            this.recognition.stop();
-            // Update accessibility state
-            const pttButton = document.getElementById('pttButton');
-            if (pttButton) pttButton.setAttribute('aria-pressed', 'false');
-        }
+    populateSuggestions(category, scenarioId) {
+        const suggestionsList = document.getElementById('suggestionsList');
+        if (!suggestionsList) return;
+
+        // Clear existing suggestions
+        suggestionsList.innerHTML = '';
+
+        // Get suggestions for this scenario
+        const categorySuggestions = SCENARIO_SUGGESTIONS[category];
+        if (!categorySuggestions) return;
+
+        const scenarioSuggestions = categorySuggestions[scenarioId];
+        if (!scenarioSuggestions || scenarioSuggestions.length === 0) return;
+
+        // Create suggestion chips
+        scenarioSuggestions.forEach(suggestion => {
+            const chip = document.createElement('button');
+            chip.className = 'suggestion-chip';
+            chip.textContent = suggestion;
+            chip.addEventListener('click', () => {
+                const pilotInput = document.getElementById('pilotInput');
+                if (pilotInput) {
+                    pilotInput.value = suggestion;
+                    pilotInput.focus();
+                }
+            });
+            suggestionsList.appendChild(chip);
+        });
     }
 
     handlePilotTransmission(transcript) {
@@ -640,38 +676,6 @@ class ATCTrainingApp {
 
     updateStatus(text) {
         document.getElementById('status').textContent = text;
-    }
-
-    showLiveTranscription() {
-        // Create live transcription element if it doesn't exist
-        let liveBox = document.getElementById('liveTranscription');
-        if (!liveBox) {
-            liveBox = document.createElement('div');
-            liveBox.id = 'liveTranscription';
-            liveBox.className = 'live-transcription';
-            liveBox.innerHTML = '<div class="transcription-header">You are saying:</div><div class="transcription-text"></div>';
-
-            const conversation = document.getElementById('conversation');
-            conversation.parentNode.insertBefore(liveBox, conversation);
-        }
-        liveBox.style.display = 'block';
-    }
-
-    updateLiveTranscription(text) {
-        const liveBox = document.getElementById('liveTranscription');
-        if (liveBox) {
-            const textElement = liveBox.querySelector('.transcription-text');
-            if (textElement) {
-                textElement.textContent = text;
-            }
-        }
-    }
-
-    hideLiveTranscription() {
-        const liveBox = document.getElementById('liveTranscription');
-        if (liveBox) {
-            liveBox.style.display = 'none';
-        }
     }
 
     showMainMenu() {

@@ -317,6 +317,120 @@ header h1 {
     font-weight: 500;
 }
 
+/* Text Input for Transmissions */
+.text-input-container {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.pilot-input {
+    flex: 1;
+    background: var(--surface-color);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    padding: 14px 18px;
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 1rem;
+    transition: all var(--transition-fast);
+}
+
+.pilot-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 15px rgba(37, 99, 235, 0.3);
+}
+
+.pilot-input::placeholder {
+    color: var(--text-muted);
+}
+
+.transmit-button {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    border: none;
+    color: white;
+    padding: 14px 28px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.transmit-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+}
+
+.transmit-button:active {
+    transform: scale(0.98);
+}
+
+/* Scenario Suggestions */
+.suggestions-container {
+    margin-bottom: 15px;
+    padding: 12px 16px;
+    background: var(--surface-color);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.suggestions-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+
+.suggestions-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.suggestion-chip {
+    background: var(--surface-light);
+    border: 1px solid var(--border-color);
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-family: inherit;
+    max-width: 100%;
+    text-align: left;
+    word-break: break-word;
+}
+
+.suggestion-chip:hover {
+    border-color: var(--primary-color);
+    background: rgba(37, 99, 235, 0.2);
+    color: var(--primary-light);
+}
+
+.suggestion-chip:active {
+    transform: scale(0.98);
+}
+
+/* Responsive text input */
+@media (max-width: 768px) {
+    .text-input-container {
+        flex-direction: column;
+    }
+
+    .transmit-button {
+        width: 100%;
+    }
+
+    .suggestion-chip {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+    }
+}
+
 /* Quick Reference */
 .quick-reference {
     background: var(--surface-color);
