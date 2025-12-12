@@ -5,261 +5,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI ATC Training System</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Animate.css -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-    <!-- Google Fonts - Aviation themed -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="aviation-theme.css">
 </head>
 <body>
-    <!-- Radar Background Animation -->
-    <div class="radar-bg">
-        <div class="radar-sweep"></div>
-        <div class="radar-grid"></div>
-    </div>
-
     <div class="container">
-        <!-- Navigation Bar -->
+        <!-- Navigation -->
         <nav class="nav-bar">
-            <div class="nav-left">
-                <button class="nav-btn back-btn" id="backButton" style="display: none;">
-                    <span class="nav-icon">←</span>
-                    <span>Back</span>
-                </button>
-                <div class="breadcrumbs" id="breadcrumbs">
-                    <span class="breadcrumb-item active">Home</span>
-                </div>
-            </div>
-            <div class="nav-right">
-                <button class="nav-btn settings-btn" id="settingsButton" title="Settings">
-                    <span class="nav-icon">⚙</span>
-                    <span>Settings</span>
-                </button>
-                <button class="nav-btn home-btn" id="homeButton">
-                    <span class="nav-icon">⌂</span>
-                    <span>Home</span>
-                </button>
-            </div>
+            <button class="nav-btn back-btn" id="backButton" style="display: none;">
+                <span>← Back</span>
+            </button>
+            <button class="nav-btn settings-btn" id="settingsButton">
+                <span>Settings</span>
+            </button>
         </nav>
 
         <!-- Header -->
-        <header class="animate__animated animate__fadeInDown">
-            <div class="header-indicator"></div>
-            <h1>
-                <span class="header-code">ATC-SIM</span>
-                <span class="header-title">Air Traffic Control Training System</span>
-            </h1>
-            <p class="subtitle">
-                <span class="status-dot"></span>
-                Real-time simulation | AI-powered voice training | Live ATC monitoring
-            </p>
+        <header>
+            <h1>ATC Training System</h1>
+            <p class="subtitle">AI-powered ATC communication training</p>
         </header>
 
-        <!-- Main Menu -->
-        <div class="main-menu">
-            <div class="menu-section-header animate__animated animate__fadeInUp">
-                <h2>SELECT TRAINING MODE</h2>
-                <div class="section-indicator"></div>
-            </div>
-
-            <div class="menu-cards">
-                <div class="menu-card animate__animated animate__fadeInUp" id="trainingModeBtn" style="animation-delay: 0.1s">
-                    <div class="card-header">
-                        <div class="card-indicator"></div>
-                        <span class="card-code">TRN-01</span>
-                    </div>
-                    <div class="menu-icon-wrapper">
-                        <div class="menu-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <path d="M8 12h8M12 8v8"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <h3>AI Training Mode</h3>
-                    <p>Interactive voice communication practice with AI-powered air traffic control</p>
-                    <div class="card-status">ACTIVE</div>
+        <!-- View 1: Category Selection (Home) -->
+        <div class="category-selection" id="categorySelection">
+            <h2>Select Training Category</h2>
+            <div class="category-cards">
+                <div class="category-card" data-category="pattern_work">
+                    <h3>Pattern Work</h3>
+                    <p>Traffic pattern communications at towered airports</p>
+                    <span class="scenario-count">5 Scenarios</span>
                 </div>
-
-                <div class="menu-card animate__animated animate__fadeInUp" id="customModeBtn" style="animation-delay: 0.2s">
-                    <div class="card-header">
-                        <div class="card-indicator"></div>
-                        <span class="card-code">CST-02</span>
-                    </div>
-                    <div class="menu-icon-wrapper">
-                        <div class="menu-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                                <path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <h3>Custom Scenario Builder</h3>
-                    <p>Design personalized training scenarios using natural language input</p>
-                    <div class="card-status">ACTIVE</div>
+                <div class="category-card" data-category="ground_operations">
+                    <h3>Ground Operations</h3>
+                    <p>Taxi clearances and ground communication</p>
+                    <span class="scenario-count">5 Scenarios</span>
                 </div>
-
-                <div class="menu-card animate__animated animate__fadeInUp" id="tutorialModeBtn" style="animation-delay: 0.3s">
-                    <div class="card-header">
-                        <div class="card-indicator"></div>
-                        <span class="card-code">GDE-03</span>
-                    </div>
-                    <div class="menu-icon-wrapper">
-                        <div class="menu-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <h3>Guided Tutorial</h3>
-                    <p>Comprehensive step-by-step walkthrough of ATC radio procedures</p>
-                    <div class="card-status">ACTIVE</div>
-                </div>
-
-                <div class="menu-card animate__animated animate__fadeInUp" id="liveAtcModeBtn" style="animation-delay: 0.4s">
-                    <div class="card-header">
-                        <div class="card-indicator"></div>
-                        <span class="card-code">LIV-04</span>
-                    </div>
-                    <div class="menu-icon-wrapper">
-                        <div class="menu-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="2"></circle>
-                                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <h3>Live ATC Monitor</h3>
-                    <p>Real-time audio streaming from airports worldwide with frequency scanner</p>
-                    <div class="card-status status-live">
-                        <span class="live-pulse"></span>
-                        LIVE
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Category Selection -->
-        <div class="scenario-selection" style="display: none;">
-            <div class="mode-header">
-                <h2>Select Training Category</h2>
-                <div class="header-buttons">
-                    <button class="btn-random" id="randomScenarioBtn">🎲 Random Scenario</button>
-                    <button class="btn-secondary" id="backToMainMenu">← Back to Main Menu</button>
-                </div>
-            </div>
-            <div class="scenario-cards">
-                <div class="scenario-card" data-category="pattern_work">
-                    <h3>🛫 Pattern Work</h3>
-                    <p>Practice traffic pattern communications at towered airports</p>
-                    <span class="difficulty">5 Scenarios</span>
-                </div>
-                <div class="scenario-card" data-category="ground_operations">
-                    <h3>🚖 Ground Operations</h3>
-                    <p>Master taxi clearances and ground communication</p>
-                    <span class="difficulty">5 Scenarios</span>
-                </div>
-                <div class="scenario-card" data-category="flight_following">
-                    <h3>📡 Flight Following</h3>
+                <div class="category-card" data-category="flight_following">
+                    <h3>Flight Following</h3>
                     <p>VFR flight following and radar services</p>
-                    <span class="difficulty">5 Scenarios</span>
+                    <span class="scenario-count">5 Scenarios</span>
                 </div>
-                <div class="scenario-card" data-category="emergency">
-                    <h3>⚠️ Emergency Procedures</h3>
-                    <p>Practice emergency communications and procedures</p>
-                    <span class="difficulty">5 Scenarios</span>
+                <div class="category-card" data-category="emergency">
+                    <h3>Emergency Procedures</h3>
+                    <p>Emergency communications and procedures</p>
+                    <span class="scenario-count">5 Scenarios</span>
                 </div>
             </div>
         </div>
 
-        <!-- Individual Scenario Selection -->
-        <div class="individual-scenario-selection" id="individualScenarioSelection" style="display: none;">
-            <div class="mode-header">
-                <h2 id="categoryTitle">Select Scenario</h2>
-                <button class="btn-secondary" id="backToCategories">← Back to Categories</button>
-            </div>
-            <div id="individualScenariosContainer" class="individual-scenarios">
+        <!-- View 2: Scenario Selection -->
+        <div class="scenario-selection" id="scenarioSelection" style="display: none;">
+            <h2 id="categoryTitle">Select Scenario</h2>
+            <div id="scenariosContainer" class="scenarios-list">
                 <!-- Populated by JavaScript -->
             </div>
         </div>
 
-        <!-- Live ATC Interface -->
-        <div class="live-atc-interface" id="liveAtcInterface" style="display: none;">
-            <div class="mode-header">
-                <h2>Live ATC Streams</h2>
-                <div class="header-buttons">
-                    <button class="btn-random" id="randomAirportBtn">🎲 Random Airport</button>
-                    <button class="btn-secondary" id="toggleMapBtn">🗺️ Show Map</button>
-                    <button class="btn-secondary" id="backToMainMenuFromLive">← Back to Main Menu</button>
-                </div>
-            </div>
-
-            <!-- Airport Map -->
-            <div class="airport-map-container" id="airportMapContainer" style="display: none;">
-                <div id="airportMap"></div>
-                <button class="btn-secondary map-close-btn" id="closeMapBtn">✕ Close Map</button>
-            </div>
-
-            <!-- Search and Filter -->
-            <div class="atc-controls">
-                <input type="text" id="airportSearch" placeholder="Search airports (name, city, or ICAO code)..." class="search-input">
-                <select id="regionFilter" class="region-select">
-                    <option value="all">All Regions</option>
-                    <option value="North America">North America</option>
-                    <option value="North America (Training)">North America - Training Airports</option>
-                    <option value="Europe">Europe</option>
-                    <option value="Asia Pacific">Asia Pacific</option>
-                    <option value="Middle East">Middle East</option>
-                </select>
-            </div>
-
-            <!-- Airport List -->
-            <div class="airport-list" id="airportList">
-                <!-- Populated by JavaScript -->
-            </div>
-
-            <!-- Audio Player -->
-            <div class="atc-player" id="atcPlayer" style="display: none;">
-                <div class="player-info">
-                    <div class="airport-info">
-                        <h3 id="playerAirportName"></h3>
-                        <p id="playerAirportCity"></p>
-                    </div>
-                    <div class="frequency-info">
-                        <span class="freq-label" id="playerFeedName"></span>
-                        <span class="frequency" id="playerFrequency"></span>
-                    </div>
-                </div>
-                <audio id="atcAudio" controls autoplay>
-                    Your browser does not support audio playback.
-                </audio>
-                <div class="player-controls">
-                    <button class="btn-secondary" id="changeAirport">Change Airport</button>
-                    <button class="btn-secondary" id="stopPlayer">Stop</button>
-                </div>
-                <div class="player-tips">
-                    <p>💡 <strong>Listening Tips:</strong> Pay attention to phraseology, readbacks, and controller techniques. Try to anticipate what pilots will say next!</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Custom Mode Interface (hidden initially) -->
-        <div class="custom-mode-interface" id="customModeInterface" style="display: none;">
-            <!-- Populated dynamically by custom-mode.js -->
-        </div>
-
-        <!-- Communication Interface (hidden initially) -->
-        <div class="comm-interface" id="commInterface" style="display: none;">
+        <!-- View 3: Training Interface -->
+        <div class="training-interface" id="trainingInterface" style="display: none;">
             <div class="scenario-info">
                 <h2 id="currentScenarioTitle"></h2>
                 <p id="currentScenarioDesc"></p>
-                <button class="btn-secondary" id="changeScenario">Change Scenario</button>
             </div>
 
             <!-- Radio Panel -->
@@ -271,196 +79,63 @@
                 <div class="signal-indicator" id="signalIndicator"></div>
             </div>
 
-            <!-- Conversation Display -->
-            <div class="conversation-container">
-                <div class="conversation" id="conversation">
-                    <div class="message system-message">
-                        <p>Ready for training. Press and hold "Push to Talk" to begin.</p>
-                    </div>
+            <!-- Conversation -->
+            <div class="conversation" id="conversation">
+                <div class="message system-message">
+                    <p>Ready. Type your transmission and press Enter or click Transmit.</p>
                 </div>
             </div>
 
-            <!-- Controls -->
+            <!-- Text Input -->
             <div class="controls">
-                <button class="ptt-button" id="pttButton" aria-label="Push to talk - hold to speak">
-                    <span class="ptt-icon">🎙️</span>
-                    <span class="ptt-text">Push to Talk</span>
-                    <span class="ptt-hint">(Hold to speak)</span>
-                </button>
-                <div class="keyboard-hint">
-                    <span>or press</span>
-                    <kbd class="kbd">Space</kbd>
-                    <span>to transmit</span>
+                <div class="text-input-container">
+                    <input type="text" id="pilotInput" class="pilot-input" placeholder="Type your transmission..." autocomplete="off" />
+                    <button class="transmit-button" id="transmitButton">Transmit</button>
                 </div>
                 <div class="status" id="status">Ready</div>
             </div>
-
-            <!-- Quick Reference -->
-            <div class="quick-reference">
-                <button class="btn-secondary" id="toggleReference">Show Phraseology Guide</button>
-                <div class="reference-content" id="referenceContent" style="display: none;">
-                    <h3>Quick Phraseology Reference</h3>
-                    <div class="reference-section">
-                        <h4>Pattern Work:</h4>
-                        <ul>
-                            <li>"[Airport] Tower, [Callsign], ready for departure, runway [XX], remaining in the pattern"</li>
-                            <li>"[Airport] Tower, [Callsign], left/right downwind, runway [XX]"</li>
-                            <li>"[Airport] Tower, [Callsign], left/right base, runway [XX], full stop/touch and go"</li>
-                        </ul>
-                    </div>
-                    <div class="reference-section">
-                        <h4>Ground Operations:</h4>
-                        <ul>
-                            <li>"[Airport] Ground, [Callsign], at [location], taxi with information [ATIS letter]"</li>
-                            <li>"[Callsign], taxi to runway [XX] via [taxiways]"</li>
-                        </ul>
-                    </div>
-                    <div class="reference-section">
-                        <h4>General Tips:</h4>
-                        <ul>
-                            <li>Always use your callsign in every transmission</li>
-                            <li>Speak clearly and at a moderate pace</li>
-                            <li>Read back all runway assignments and hold short instructions</li>
-                            <li>Use phonetic alphabet for clarification</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
         </div>
 
-        <!-- Tutorial Interface (hidden initially) -->
-        <div class="tutorial-interface" id="tutorialInterface" style="display: none;">
-            <div class="mode-header">
-                <h2>Guided Tutorial</h2>
-                <button class="btn-secondary" id="exitTutorial">← Exit Tutorial</button>
-            </div>
-            <div id="tutorialProgress" class="tutorial-progress">
-                <!-- Populated by JavaScript -->
-            </div>
-            <div id="tutorialContent" class="tutorial-content">
-                <!-- Populated by JavaScript -->
-            </div>
-        </div>
-
-        <!-- Settings Panel (Modal) -->
+        <!-- Settings Modal -->
         <div class="settings-modal" id="settingsModal" style="display: none;">
             <div class="settings-overlay" id="settingsOverlay"></div>
             <div class="settings-panel">
                 <div class="settings-header">
-                    <h2>⚙ Settings</h2>
+                    <h2>Settings</h2>
                     <button class="settings-close" id="closeSettings">×</button>
                 </div>
                 <div class="settings-content">
                     <div class="settings-section">
-                        <h3>Speech Settings</h3>
-                        <div class="setting-item">
-                            <label for="speechRate">Speech Rate</label>
-                            <input type="range" id="speechRate" min="0.5" max="1.5" step="0.1" value="0.9">
-                            <span id="speechRateValue">0.9x</span>
-                        </div>
-                        <div class="setting-item">
-                            <label for="speechVolume">Volume</label>
-                            <input type="range" id="speechVolume" min="0" max="1" step="0.1" value="1">
-                            <span id="speechVolumeValue">100%</span>
-                        </div>
-                        <div class="setting-item">
-                            <label for="autoPlayATC">
-                                <input type="checkbox" id="autoPlayATC" checked>
-                                Auto-play ATC responses
-                            </label>
-                        </div>
-                    </div>
-                    <div class="settings-section">
-                        <h3>Display Settings</h3>
-                        <div class="setting-item">
-                            <label for="showKeyboardHints">
-                                <input type="checkbox" id="showKeyboardHints" checked>
-                                Show keyboard shortcuts
-                            </label>
-                        </div>
-                        <div class="setting-item">
-                            <label for="enableSoundEffects">
-                                <input type="checkbox" id="enableSoundEffects" checked>
-                                Enable sound effects
-                            </label>
-                        </div>
-                    </div>
-                    <div class="settings-section">
-                        <h3>Pilot Preferences</h3>
-                        <div class="setting-item">
-                            <label for="callsignPrefix">Default Callsign Prefix</label>
-                            <select id="callsignPrefix">
-                                <option value="N">N (US)</option>
-                                <option value="C">C (Canada)</option>
-                                <option value="G">G (UK)</option>
-                                <option value="D">D (Germany)</option>
-                                <option value="F">F (France)</option>
-                            </select>
-                        </div>
-                        <div class="setting-item">
-                            <label for="preferredAircraft">Preferred Aircraft</label>
-                            <select id="preferredAircraft">
-                                <option value="Cessna 172">Cessna 172</option>
-                                <option value="Cessna 152">Cessna 152</option>
-                                <option value="Piper Cherokee">Piper Cherokee</option>
-                                <option value="Cirrus SR22">Cirrus SR22</option>
-                                <option value="Diamond DA40">Diamond DA40</option>
-                                <option value="Beechcraft Bonanza">Beechcraft Bonanza</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="settings-section">
-                        <h3>Progress & Data</h3>
-                        <div class="setting-item stats-display">
+                        <h3>Progress</h3>
+                        <div class="stats-display">
                             <div class="stat-item">
-                                <span class="stat-label">Total Sessions:</span>
+                                <span class="stat-label">Sessions:</span>
                                 <span class="stat-value" id="statSessions">0</span>
                             </div>
                             <div class="stat-item">
                                 <span class="stat-label">Transmissions:</span>
                                 <span class="stat-value" id="statTransmissions">0</span>
                             </div>
-                            <div class="stat-item">
-                                <span class="stat-label">Total Time:</span>
-                                <span class="stat-value" id="statTime">0m</span>
-                            </div>
                         </div>
-                        <div class="setting-actions">
-                            <button class="btn-secondary btn-danger" id="resetProgress">Reset All Progress</button>
-                        </div>
+                        <button class="btn-secondary btn-danger" id="resetProgress">Reset Progress</button>
                     </div>
                 </div>
                 <div class="settings-footer">
-                    <button class="btn-secondary" id="resetSettings">Reset to Defaults</button>
-                    <button class="btn-primary" id="saveSettings">Save Settings</button>
+                    <button class="btn-primary" id="saveSettings">Save</button>
                 </div>
             </div>
         </div>
 
-        <!-- Tutorial Overlay -->
-        <div class="tutorial-overlay" id="tutorialOverlay" style="display: none;">
-            <!-- Populated by JavaScript -->
-        </div>
-
         <!-- Footer -->
         <footer>
-            <p>Practice makes perfect. Fly safe! ✈️</p>
+            <p>Practice makes perfect. Fly safe!</p>
         </footer>
     </div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <!-- Core Architecture (must load first) -->
+    <!-- Scripts -->
     <script src="core.js"></script>
     <script src="config.js"></script>
     <script src="scenarios-config.js"></script>
-    <script src="airports.js"></script>
-    <script src="map.js"></script>
-    <script src="tutorial.js"></script>
-    <script src="custom-mode.js"></script>
-    <script src="navigation.js"></script>
     <script src="app.js"></script>
-    <script src="live-atc.js"></script>
 </body>
 </html>
