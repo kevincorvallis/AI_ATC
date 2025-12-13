@@ -117,12 +117,8 @@ class ATCTrainingApp {
         this.currentView = 'categories';
         this.currentCategory = null;
         this.currentScenario = null;
+        this.currentScenarioId = null;
         this.conversationHistory = [];
-<<<<<<< HEAD
-        this.synthesis = window.speechSynthesis;
-        this.isSpeaking = false;
-        this.isWaitingForResponse = false;
-=======
         this.isWaitingForResponse = false;
 
         this.views = {
@@ -130,13 +126,10 @@ class ATCTrainingApp {
             scenarios: document.getElementById('scenarioSelection'),
             training: document.getElementById('trainingInterface')
         };
->>>>>>> 03ae722809db7f308313d0a8422c44a760d9678e
 
         this.initEventListeners();
     }
 
-<<<<<<< HEAD
-=======
     // Navigation
     showView(viewName) {
         Object.entries(this.views).forEach(([name, el]) => {
@@ -159,7 +152,6 @@ class ATCTrainingApp {
         }
     }
 
->>>>>>> 03ae722809db7f308313d0a8422c44a760d9678e
     initEventListeners() {
         // Back button
         document.getElementById('backButton')?.addEventListener('click', () => this.goBack());
@@ -187,49 +179,10 @@ class ATCTrainingApp {
                     this.handleTextTransmission();
                 }
             });
-<<<<<<< HEAD
-        });
-
-        // Text input for transmissions
-        const pilotInput = document.getElementById('pilotInput');
-        const transmitButton = document.getElementById('transmitButton');
-
-        if (transmitButton) {
-            transmitButton.addEventListener('click', () => this.handleTextTransmission());
-        }
-
-        if (pilotInput) {
-            pilotInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    this.handleTextTransmission();
-                }
-            });
-        }
-
-        // Change scenario button
-        document.getElementById('changeScenario').addEventListener('click', () => {
-            this.showScenarioSelection();
-        });
-
-        // Toggle reference guide
-        document.getElementById('toggleReference').addEventListener('click', () => {
-            const content = document.getElementById('referenceContent');
-            const button = document.getElementById('toggleReference');
-            if (content.style.display === 'none') {
-                content.style.display = 'block';
-                button.textContent = 'Hide Phraseology Guide';
-            } else {
-                content.style.display = 'none';
-                button.textContent = 'Show Phraseology Guide';
-            }
-        });
-=======
         }
 
         // Settings
         this.initSettings();
->>>>>>> 03ae722809db7f308313d0a8422c44a760d9678e
     }
 
     handleTextTransmission() {
@@ -240,6 +193,33 @@ class ATCTrainingApp {
 
         input.value = '';
         this.handlePilotTransmission(text);
+    }
+
+    populateSuggestions(category, scenarioId) {
+        const suggestionsList = document.getElementById('suggestionsList');
+        if (!suggestionsList) return;
+
+        suggestionsList.innerHTML = '';
+
+        const categorySuggestions = SCENARIO_SUGGESTIONS[category];
+        if (!categorySuggestions) return;
+
+        const scenarioSuggestions = categorySuggestions[scenarioId];
+        if (!scenarioSuggestions || scenarioSuggestions.length === 0) return;
+
+        scenarioSuggestions.forEach(suggestion => {
+            const chip = document.createElement('button');
+            chip.className = 'suggestion-chip';
+            chip.textContent = suggestion;
+            chip.addEventListener('click', () => {
+                const pilotInput = document.getElementById('pilotInput');
+                if (pilotInput) {
+                    pilotInput.value = suggestion;
+                    pilotInput.focus();
+                }
+            });
+            suggestionsList.appendChild(chip);
+        });
     }
 
     showScenarios(category) {
@@ -269,6 +249,7 @@ class ATCTrainingApp {
 
     startScenario(category, scenario) {
         this.currentScenario = category;
+        this.currentScenarioId = scenario.id;
         this.conversationHistory = [];
 
         const frequencies = {
@@ -285,103 +266,25 @@ class ATCTrainingApp {
         const conversation = document.getElementById('conversation');
         conversation.innerHTML = `
             <div class="message system-message">
-<<<<<<< HEAD
-                <p><strong>Scenario Started:</strong> ${scenarioDetails.name}</p>
-                <p>${scenarioDetails.description}</p>
-                <p><strong>Difficulty:</strong> <span class="difficulty">${scenarioDetails.difficulty}</span></p>
-                <p><strong>Conditions:</strong> ${scenarioDetails.conditions}</p>
-                <div style="background: rgba(245, 158, 11, 0.1); padding: 12px; border-radius: 6px; margin-top: 12px;">
-                    <p style="margin: 0;"><strong>💡 Tip:</strong> ${scenarioDetails.tips}</p>
-                </div>
-                ${modeMessage}
-                <p style="margin-top: 12px;">Type your transmission below or click a suggestion to begin.</p>
-            </div>
-        `;
-
-        conversation.innerHTML = scenarioInfo;
-
-        // Populate suggestions for this scenario
-        this.populateSuggestions(category, scenarioId);
-
-        // Show communication interface
-        document.querySelector('.main-menu').style.display = 'none';
-        document.querySelector('.scenario-selection').style.display = 'none';
-        document.getElementById('individualScenarioSelection').style.display = 'none';
-        document.getElementById('liveAtcInterface').style.display = 'none';
-        document.getElementById('commInterface').style.display = 'block';
-=======
                 <p><strong>${scenario.name}</strong></p>
                 <p>${scenario.description}</p>
                 <p><strong>Conditions:</strong> ${scenario.conditions}</p>
-                <p style="margin-top: 10px;">Type your transmission below and press Enter or click Transmit.</p>
+                <p style="margin-top: 10px;">Type your transmission below or click a suggestion.</p>
             </div>
         `;
 
-        // Focus the input field
+        // Populate suggestions
+        this.populateSuggestions(category, scenario.id);
+
+        // Focus input
         document.getElementById('pilotInput')?.focus();
->>>>>>> 03ae722809db7f308313d0a8422c44a760d9678e
 
         this.showView('training');
         this.updateStatus('Ready');
 
-<<<<<<< HEAD
-    showScenarioSelection() {
-        document.querySelector('.scenario-selection').style.display = 'block';
-        document.getElementById('individualScenarioSelection').style.display = 'none';
-        document.getElementById('commInterface').style.display = 'none';
-        this.currentCategory = null;
-        this.currentScenario = null;
-        this.currentScenarioId = null;
-        this.conversationHistory = [];
-    }
-
-    handleTextTransmission() {
-        const pilotInput = document.getElementById('pilotInput');
-        if (!pilotInput) return;
-
-        const text = pilotInput.value.trim();
-        if (!text || this.isWaitingForResponse || this.isSpeaking) return;
-
-        // Clear input
-        pilotInput.value = '';
-
-        // Process the transmission
-        this.handlePilotTransmission(text);
-    }
-
-    populateSuggestions(category, scenarioId) {
-        const suggestionsList = document.getElementById('suggestionsList');
-        if (!suggestionsList) return;
-
-        // Clear existing suggestions
-        suggestionsList.innerHTML = '';
-
-        // Get suggestions for this scenario
-        const categorySuggestions = SCENARIO_SUGGESTIONS[category];
-        if (!categorySuggestions) return;
-
-        const scenarioSuggestions = categorySuggestions[scenarioId];
-        if (!scenarioSuggestions || scenarioSuggestions.length === 0) return;
-
-        // Create suggestion chips
-        scenarioSuggestions.forEach(suggestion => {
-            const chip = document.createElement('button');
-            chip.className = 'suggestion-chip';
-            chip.textContent = suggestion;
-            chip.addEventListener('click', () => {
-                const pilotInput = document.getElementById('pilotInput');
-                if (pilotInput) {
-                    pilotInput.value = suggestion;
-                    pilotInput.focus();
-                }
-            });
-            suggestionsList.appendChild(chip);
-        });
-=======
         if (window.appCore) {
             window.appCore.progress.incrementSessions();
         }
->>>>>>> 03ae722809db7f308313d0a8422c44a760d9678e
     }
 
     handlePilotTransmission(transcript) {
@@ -479,7 +382,6 @@ class ATCTrainingApp {
         this.addMessage('atc', response);
         this.updateStatus('Ready');
 
-        // Brief visual indicator that ATC responded
         setTimeout(() => {
             document.getElementById('signalIndicator')?.classList.remove('receiving');
         }, 1000);
@@ -506,108 +408,28 @@ class ATCTrainingApp {
         if (status) status.textContent = text;
     }
 
-<<<<<<< HEAD
-    showMainMenu() {
-        document.querySelector('.main-menu').style.display = 'block';
-        document.querySelector('.scenario-selection').style.display = 'none';
-        document.getElementById('liveAtcInterface').style.display = 'none';
-        document.getElementById('commInterface').style.display = 'none';
-
-        // Hide custom mode if it exists
-        const customInterface = document.getElementById('customModeInterface');
-        if (customInterface) {
-            customInterface.style.display = 'none';
-        }
-    }
-
-    showTrainingMode() {
-        document.querySelector('.main-menu').style.display = 'none';
-        document.querySelector('.scenario-selection').style.display = 'block';
-        document.getElementById('liveAtcInterface').style.display = 'none';
-        document.getElementById('commInterface').style.display = 'none';
-    }
-
-    showLiveAtcMode() {
-        document.querySelector('.main-menu').style.display = 'none';
-        document.querySelector('.scenario-selection').style.display = 'none';
-        document.getElementById('individualScenarioSelection').style.display = 'none';
-        document.getElementById('liveAtcInterface').style.display = 'block';
-        document.getElementById('commInterface').style.display = 'none';
-
-        // Initialize live ATC player
-        initLiveATC();
-    }
-
-    showCategorySelection() {
-        document.querySelector('.main-menu').style.display = 'none';
-        document.querySelector('.scenario-selection').style.display = 'block';
-        document.getElementById('individualScenarioSelection').style.display = 'none';
-        document.getElementById('liveAtcInterface').style.display = 'none';
-        document.getElementById('commInterface').style.display = 'none';
-    }
-
-    showIndividualScenarios(category) {
-        this.currentCategory = category;
-
-        // Get scenario data
-        const categoryData = getScenariosForCategory(category);
-        if (!categoryData) return;
-
-        // Update title
-        document.getElementById('categoryTitle').textContent = categoryData.name;
-
-        // Populate scenarios
-        const container = document.getElementById('individualScenariosContainer');
-        container.innerHTML = '';
-
-        categoryData.scenarios.forEach(scenario => {
-            const scenarioCard = document.createElement('div');
-            scenarioCard.className = 'individual-scenario-card';
-            scenarioCard.dataset.scenarioId = scenario.id;
-
-            const difficultyClass = scenario.difficulty.toLowerCase();
-
-            scenarioCard.innerHTML = `
-                <div class="scenario-icon">${scenario.icon}</div>
-                <div class="scenario-details">
-                    <h3>${scenario.name}</h3>
-                    <p class="scenario-description">${scenario.description}</p>
-                    <div class="scenario-meta">
-                        <span class="difficulty difficulty-${difficultyClass}">${scenario.difficulty}</span>
-                        <span class="conditions">📍 ${scenario.conditions}</span>
-                    </div>
-                    <p class="scenario-tip">💡 ${scenario.tips}</p>
-                </div>
-            `;
-
-            scenarioCard.addEventListener('click', () => {
-                this.startScenario(category, scenario.id);
-            });
-
-            container.appendChild(scenarioCard);
-=======
-    // Settings
     initSettings() {
         const modal = document.getElementById('settingsModal');
         const overlay = document.getElementById('settingsOverlay');
 
         document.getElementById('settingsButton')?.addEventListener('click', () => {
-            modal.style.display = 'flex';
-            this.loadSettings();
->>>>>>> 03ae722809db7f308313d0a8422c44a760d9678e
+            if (modal) {
+                modal.style.display = 'flex';
+                this.loadSettings();
+            }
         });
 
         document.getElementById('closeSettings')?.addEventListener('click', () => {
-            modal.style.display = 'none';
+            if (modal) modal.style.display = 'none';
         });
 
         overlay?.addEventListener('click', () => {
-            modal.style.display = 'none';
+            if (modal) modal.style.display = 'none';
         });
 
         document.getElementById('saveSettings')?.addEventListener('click', () => {
             this.saveSettings();
-            modal.style.display = 'none';
+            if (modal) modal.style.display = 'none';
         });
 
         document.getElementById('resetProgress')?.addEventListener('click', () => {
@@ -621,7 +443,6 @@ class ATCTrainingApp {
     loadSettings() {
         if (!window.appCore) return;
 
-        // Stats
         const stats = window.appCore.progress.getStatistics();
         const sessions = document.getElementById('statSessions');
         const transmissions = document.getElementById('statTransmissions');

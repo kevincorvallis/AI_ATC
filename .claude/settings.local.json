@@ -14,11 +14,8 @@
       "Bash(python3:*)",
       "Bash(aws logs describe-log-streams:*)",
       "Bash(aws logs get-log-events:*)",
-<<<<<<< HEAD
-      "Bash(ls:*)"
-=======
+      "Bash(ls:*)",
       "Bash(git checkout:*)"
->>>>>>> 03ae722809db7f308313d0a8422c44a760d9678e
     ],
     "deny": [],
     "ask": []
