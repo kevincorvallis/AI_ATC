@@ -120,6 +120,13 @@ class ATCTrainingApp {
         this.currentScenarioId = null;
         this.conversationHistory = [];
         this.isWaitingForResponse = false;
+        this.lastATCMessage = null;
+
+        // Aviation enhancement modules - will be assigned when ready
+        this.stateMachine = null;
+        this.feedbackEngine = null;
+        this.aviationVisual = null;
+        this.phraseologyValidator = null;
 
         this.views = {
             categories: document.getElementById('categorySelection'),
@@ -128,6 +135,28 @@ class ATCTrainingApp {
         };
 
         this.initEventListeners();
+
+        // Initialize modules after ensuring they're loaded
+        this.initModules();
+    }
+
+    initModules() {
+        // Wait for all modules to be available
+        const checkModules = () => {
+            this.stateMachine = window.scenarioStateMachine;
+            this.feedbackEngine = window.feedbackEngine;
+            this.aviationVisual = window.aviationVisual;
+            this.phraseologyValidator = window.phraseologyValidator;
+
+            if (!this.stateMachine || !this.feedbackEngine ||
+                !this.aviationVisual || !this.phraseologyValidator) {
+                // Retry after a short delay
+                setTimeout(checkModules, 50);
+            } else {
+                console.log('All modules loaded successfully');
+            }
+        };
+        checkModules();
     }
 
     // Navigation
@@ -251,6 +280,18 @@ class ATCTrainingApp {
         this.currentScenario = category;
         this.currentScenarioId = scenario.id;
         this.conversationHistory = [];
+        this.lastATCMessage = null;
+
+        // Initialize aviation systems
+        if (this.stateMachine) {
+            this.stateMachine.initialize(category);
+        }
+        if (this.feedbackEngine) {
+            this.feedbackEngine.resetSession();
+        }
+        if (this.aviationVisual) {
+            this.aviationVisual.initialize(scenario);
+        }
 
         const frequencies = {
             pattern_work: '118.300',
@@ -269,12 +310,21 @@ class ATCTrainingApp {
                 <p><strong>${scenario.name}</strong></p>
                 <p>${scenario.description}</p>
                 <p><strong>Conditions:</strong> ${scenario.conditions}</p>
+                <p><strong>Difficulty:</strong> <span id="difficultyIndicator">Student Pilot</span></p>
                 <p style="margin-top: 10px;">Type your transmission below or click a suggestion.</p>
             </div>
         `;
 
         // Populate suggestions
         this.populateSuggestions(category, scenario.id);
+
+        // Update visual interface
+        if (this.aviationVisual) {
+            const state = this.stateMachine?.getCurrentState();
+            if (state) {
+                this.aviationVisual.updateProgress(state);
+            }
+        }
 
         // Focus input
         document.getElementById('pilotInput')?.focus();
@@ -293,12 +343,20 @@ class ATCTrainingApp {
         this.conversationHistory.push({ role: 'user', content: transcript });
         this.updateStatus('Waiting for ATC...');
         document.getElementById('signalIndicator')?.classList.add('transmitting');
+
+        // Increment transmission counter (for both API and demo mode)
+        if (window.appCore) {
+            window.appCore.progress.incrementTransmissions();
+        }
+
         this.sendToATC(transcript);
     }
 
     async sendToATC(message) {
         try {
             if (!API_ENDPOINT || API_ENDPOINT === 'YOUR_API_ENDPOINT_HERE/atc') {
+                console.warn('API endpoint not configured, using demo mode');
+                this.addMessage('system', '⚠️ Demo mode: API not configured');
                 this.handleDemoMode(message);
                 return;
             }
@@ -320,6 +378,8 @@ class ATCTrainingApp {
             clearTimeout(timeoutId);
 
             if (!response.ok) {
+                console.error(`API error: ${response.status} ${response.statusText}`);
+                this.addMessage('system', `⚠️ API error (${response.status}), switching to demo mode`);
                 this.handleDemoMode(message);
                 return;
             }
@@ -329,9 +389,16 @@ class ATCTrainingApp {
                 this.conversationHistory.push({ role: 'assistant', content: data.atc_response });
                 this.handleATCResponse(data.atc_response);
             } else {
+                console.error('API returned success:false:', data.error);
+                this.addMessage('system', `⚠️ ${data.error || 'API error'}, switching to demo mode`);
                 this.handleDemoMode(message);
             }
         } catch (error) {
+            const errorMsg = error.name === 'AbortError' ?
+                'Request timeout (15s)' :
+                `Network error: ${error.message}`;
+            console.error('API call failed:', errorMsg);
+            this.addMessage('system', `⚠️ ${errorMsg}, switching to demo mode`);
             this.handleDemoMode(message);
         }
     }
@@ -368,18 +435,54 @@ class ATCTrainingApp {
 
         this.conversationHistory.push({ role: 'assistant', content: response });
 
-        if (window.appCore) {
-            window.appCore.progress.incrementTransmissions();
-        }
-
         setTimeout(() => this.handleATCResponse(response), 600);
     }
 
     handleATCResponse(response) {
         this.isWaitingForResponse = false;
+        this.lastATCMessage = response;
         document.getElementById('signalIndicator')?.classList.remove('transmitting');
         document.getElementById('signalIndicator')?.classList.add('receiving');
         this.addMessage('atc', response);
+
+        // Get the last pilot message
+        const lastPilotMessage = this.conversationHistory
+            .filter(m => m.role === 'user')
+            .pop()?.content || '';
+
+        // Update state machine with the conversation
+        if (this.stateMachine) {
+            const state = this.stateMachine.update(lastPilotMessage, response);
+
+            // Update visual interface
+            if (this.aviationVisual) {
+                this.aviationVisual.updateProgress(state);
+                const hint = this.stateMachine.getCurrentHint();
+                if (hint) {
+                    this.aviationVisual.updateNextAction(hint);
+                }
+            }
+        }
+
+        // Generate and display feedback
+        if (this.feedbackEngine && lastPilotMessage) {
+            const scenarioState = this.stateMachine?.getCurrentState();
+            const feedbackData = this.feedbackEngine.processFeedback(
+                lastPilotMessage,
+                this.lastATCMessage,
+                scenarioState
+            );
+
+            // Display feedback
+            this.feedbackEngine.displayFeedback(feedbackData);
+
+            // Check if difficulty adjustment is suggested
+            const difficultyAdjustment = this.feedbackEngine.suggestDifficultyAdjustment();
+            if (difficultyAdjustment && this.conversationHistory.length >= 20) {
+                this.showDifficultyAdjustmentPrompt(difficultyAdjustment);
+            }
+        }
+
         this.updateStatus('Ready');
 
         setTimeout(() => {
@@ -448,10 +551,90 @@ class ATCTrainingApp {
         const transmissions = document.getElementById('statTransmissions');
         if (sessions) sessions.textContent = stats.totalSessions || 0;
         if (transmissions) transmissions.textContent = stats.totalTransmissions || 0;
+
+        // Load difficulty setting
+        const savedDifficulty = window.appCore.settings.get('difficulty') || 'beginner';
+        const difficultySelect = document.getElementById('difficultySelect');
+        if (difficultySelect) {
+            difficultySelect.value = savedDifficulty;
+        }
+
+        // Apply difficulty to feedbackEngine
+        if (this.feedbackEngine) {
+            this.feedbackEngine.setDifficulty(savedDifficulty);
+        } else {
+            // Retry after modules load
+            setTimeout(() => {
+                if (this.feedbackEngine) {
+                    this.feedbackEngine.setDifficulty(savedDifficulty);
+                }
+            }, 100);
+        }
     }
 
     saveSettings() {
-        // No settings to save currently
+        // Save difficulty preference
+        const difficultySelect = document.getElementById('difficultySelect');
+        if (difficultySelect && this.feedbackEngine && window.appCore) {
+            const difficulty = difficultySelect.value;
+            this.feedbackEngine.setDifficulty(difficulty);
+            window.appCore.settings.set('difficulty', difficulty);
+        }
+    }
+
+    showDifficultyAdjustmentPrompt(adjustment) {
+        // Only show once per session
+        if (this.difficultyPromptShown) return;
+        this.difficultyPromptShown = true;
+
+        const conversation = document.getElementById('conversation');
+        const promptDiv = document.createElement('div');
+        promptDiv.className = 'message system-message difficulty-prompt';
+
+        const title = document.createElement('p');
+        title.innerHTML = '<strong>Performance Update</strong>';
+
+        const reason = document.createElement('p');
+        reason.textContent = adjustment.reason;
+
+        const upgradeBtn = document.createElement('button');
+        upgradeBtn.className = 'btn-primary';
+        upgradeBtn.textContent = `Switch to ${adjustment.suggested.charAt(0).toUpperCase() + adjustment.suggested.slice(1)}`;
+        upgradeBtn.addEventListener('click', () => {
+            this.adjustDifficulty(adjustment.suggested);
+        });
+
+        const stayBtn = document.createElement('button');
+        stayBtn.className = 'btn-secondary';
+        stayBtn.textContent = 'Stay at current level';
+        stayBtn.addEventListener('click', () => {
+            promptDiv.remove();
+        });
+
+        promptDiv.appendChild(title);
+        promptDiv.appendChild(reason);
+        promptDiv.appendChild(upgradeBtn);
+        promptDiv.appendChild(stayBtn);
+
+        conversation.appendChild(promptDiv);
+        conversation.scrollTop = conversation.scrollHeight;
+    }
+
+    adjustDifficulty(newDifficulty) {
+        if (this.feedbackEngine) {
+            this.feedbackEngine.setDifficulty(newDifficulty);
+            const difficultySelect = document.getElementById('difficultySelect');
+            if (difficultySelect) {
+                difficultySelect.value = newDifficulty;
+            }
+            this.addMessage('system', `Difficulty adjusted to ${newDifficulty}. ${
+                newDifficulty === 'advanced' ? 'You will now receive minimal feedback - fly like a pro!' :
+                newDifficulty === 'intermediate' ? 'You will receive moderate feedback on important items.' :
+                'You will receive detailed feedback on every transmission.'
+            }`);
+        }
+        // Remove difficulty prompt
+        document.querySelector('.difficulty-prompt')?.remove();
     }
 }
 

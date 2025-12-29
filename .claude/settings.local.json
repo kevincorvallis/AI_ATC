@@ -15,7 +15,10 @@
       "Bash(aws logs describe-log-streams:*)",
       "Bash(aws logs get-log-events:*)",
       "Bash(ls:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(rsvg-convert:*)",
+      "Bash(./deploy.sh:*)",
+      "Skill(update-lambda)"
     ],
     "deny": [],
     "ask": []

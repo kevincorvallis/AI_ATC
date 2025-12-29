@@ -5,8 +5,11 @@ import urllib.request
 import urllib.error
 from openai import OpenAI
 
-# Initialize OpenAI client
-client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
+# Initialize OpenAI client with validation
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+if not OPENAI_API_KEY:
+    raise ValueError("OPENAI_API_KEY environment variable is required")
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 # Aviation API for FAA charts
 AVIATION_API_URL = "https://api.aviationapi.com/v1/charts"
@@ -17,6 +20,7 @@ ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:8000',
     'http://127.0.0.1:3000',
+    'https://kevincorvallis.github.io',  # GitHub Pages
     # Add your production domain: 'https://yourdomain.com'
 ]
 
@@ -25,18 +29,18 @@ def get_cors_headers(event=None):
     Generate CORS headers with origin validation.
     Only allows requests from whitelisted origins.
     """
-    origin = '*'  # Default fallback
+    # Default to first allowed origin (no wildcard fallback for security)
+    origin = ALLOWED_ORIGINS[0] if ALLOWED_ORIGINS else 'http://localhost:8000'
 
     if event:
         # Try to get origin from request headers
         headers = event.get('headers', {})
         request_origin = headers.get('origin') or headers.get('Origin', '')
 
+        # Only set origin if it's in the whitelist
         if request_origin in ALLOWED_ORIGINS:
             origin = request_origin
-        elif ALLOWED_ORIGINS:
-            # If origin not in list, use first allowed origin (restrictive)
-            origin = ALLOWED_ORIGINS[0]
+        # If not in whitelist, keep the default (no wildcard fallback)
 
     return {
         'Content-Type': 'application/json',
@@ -65,6 +69,12 @@ Your personality:
 - Provide specific, actionable feedback when needed
 - Acknowledge good technique: "Good readback" or "Nice call"
 - Use their callsign naturally in conversation
+
+PHRASEOLOGY GUIDANCE:
+- When pilot uses excellent phraseology, occasionally acknowledge: "Good readback" or "Nice call"
+- If pilot forgets critical readback (runway number, hold short), gently remind: "Confirm runway 27?" or "Need your readback on hold short runway 27"
+- If pilot is too wordy or informal, subtly guide: "Roger, keep transmissions brief" (but only if egregious)
+- Do NOT be pedantic - focus on safety-critical items like runway assignments and clearances
 
 Typical pattern flow (track where they are):
 1. Initial call → Acknowledge, assign squawk if needed
@@ -96,6 +106,12 @@ Your personality:
 - Acknowledge good readbacks: "Good readback, taxi Alpha"
 - Gently correct mistakes: "Correction, hold short of runway 27, not taxiway Alpha"
 - Sound like a real person, not automated
+
+PHRASEOLOGY GUIDANCE:
+- CRITICAL: If pilot fails to read back "hold short runway 27", you MUST say: "Need your readback on hold short runway 27"
+- If pilot reads back correctly, acknowledge: "Readback correct" or "Good readback"
+- If pilot forgets to include ATIS info on initial call, remind them: "What's your ATIS information?"
+- Taxi clearances MUST be read back verbatim by pilots - enforce this for safety
 
 Progressive taxi flow (track their progress):
 1. Initial call → "Taxi to runway 27 via Alpha, hold short 27"
@@ -209,10 +225,10 @@ def get_atc_response(scenario, conversation_history, pilot_message, custom_syste
     try:
         # Validate and use custom system prompt if provided, otherwise select from predefined scenarios
         validated_custom_prompt = validate_custom_prompt(custom_system_prompt)
-        if validated_custom_prompt:
-            system_prompt = validated_custom_prompt
-        else:
-            system_prompt = SCENARIO_PROMPTS.get(scenario, SCENARIO_PROMPTS["pattern_work"])
+        if custom_system_prompt and not validated_custom_prompt:
+            # Log the rejection but continue with default prompt
+            print(f"Custom prompt rejected for safety. Falling back to default scenario prompt.")
+        system_prompt = validated_custom_prompt if validated_custom_prompt else SCENARIO_PROMPTS.get(scenario, SCENARIO_PROMPTS["pattern_work"])
 
         # Build messages for OpenAI
         messages = [
@@ -253,7 +269,8 @@ def get_atc_response(scenario, conversation_history, pilot_message, custom_syste
         return {
             'success': False,
             'error': str(e),
-            'atc_response': "Radio temporarily out of service. Please try again."
+            'atc_response': "Radio temporarily out of service. Please try again.",
+            'has_feedback': False
         }
 
 def generate_custom_scenario(user_prompt):
@@ -421,8 +438,19 @@ def lambda_handler(event, context):
     AWS Lambda handler function
     """
     try:
-        # Parse request body
-        body = json.loads(event.get('body', '{}'))
+        # Parse request body with error handling
+        try:
+            body = json.loads(event.get('body', '{}'))
+        except json.JSONDecodeError as e:
+            print(f"JSON parsing error: {str(e)}")
+            return {
+                'statusCode': 400,
+                'headers': get_cors_headers(event),
+                'body': json.dumps({
+                    'success': False,
+                    'error': 'Invalid JSON in request body'
+                })
+            }
 
         # Check if this is a scenario generation request
         if body.get('action') == 'generate_scenario':
@@ -472,7 +500,7 @@ def lambda_handler(event, context):
         conversation_history = body.get('history', [])
         custom_system_prompt = body.get('customSystemPrompt', None)  # Support for custom scenarios
 
-        # Validate input
+        # Validate input types and lengths
         if not pilot_message:
             return {
                 'statusCode': 400,
@@ -482,6 +510,37 @@ def lambda_handler(event, context):
                     'error': 'No message provided'
                 })
             }
+
+        if not isinstance(pilot_message, str):
+            return {
+                'statusCode': 400,
+                'headers': get_cors_headers(event),
+                'body': json.dumps({
+                    'success': False,
+                    'error': 'Message must be a string'
+                })
+            }
+
+        if len(pilot_message) > 500:
+            return {
+                'statusCode': 400,
+                'headers': get_cors_headers(event),
+                'body': json.dumps({
+                    'success': False,
+                    'error': 'Message too long (max 500 characters)'
+                })
+            }
+
+        if not isinstance(conversation_history, list):
+            conversation_history = []
+
+        if len(conversation_history) > 100:
+            conversation_history = conversation_history[-100:]  # Limit history
+
+        # Validate scenario is one of the expected values
+        valid_scenarios = ['pattern_work', 'ground_operations', 'flight_following', 'emergency']
+        if scenario not in valid_scenarios:
+            scenario = 'pattern_work'  # Default fallback
 
         # Get ATC response (with optional custom system prompt)
         result = get_atc_response(scenario, conversation_history, pilot_message, custom_system_prompt)

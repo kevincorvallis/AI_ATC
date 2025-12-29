@@ -1,0 +1,135 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background gradient -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a5f"/>
+      <stop offset="100%" style="stop-color:#0f172a"/>
+    </linearGradient>
+
+    <!-- Accent gradient -->
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#60a5fa"/>
+      <stop offset="100%" style="stop-color:#3b82f6"/>
+    </linearGradient>
+
+    <!-- Glow effect -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Radio wave animation reference -->
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="224" fill="url(#bgGradient)"/>
+
+  <!-- Subtle grid pattern -->
+  <g opacity="0.05">
+    <line x1="256" y1="0" x2="256" y2="1024" stroke="white" stroke-width="1"/>
+    <line x1="512" y1="0" x2="512" y2="1024" stroke="white" stroke-width="1"/>
+    <line x1="768" y1="0" x2="768" y2="1024" stroke="white" stroke-width="1"/>
+    <line x1="0" y1="256" x2="1024" y2="256" stroke="white" stroke-width="1"/>
+    <line x1="0" y1="512" x2="1024" y2="512" stroke="white" stroke-width="1"/>
+    <line x1="0" y1="768" x2="1024" y2="768" stroke="white" stroke-width="1"/>
+  </g>
+
+  <!-- Radio waves (left side) -->
+  <g transform="translate(512, 480)" opacity="0.6">
+    <!-- Outer wave -->
+    <path d="M -180 -120 Q -280 0 -180 120"
+          fill="none" stroke="url(#accentGradient)" stroke-width="16" stroke-linecap="round"/>
+    <!-- Middle wave -->
+    <path d="M -120 -80 Q -190 0 -120 80"
+          fill="none" stroke="url(#accentGradient)" stroke-width="16" stroke-linecap="round"/>
+    <!-- Inner wave -->
+    <path d="M -60 -40 Q -100 0 -60 40"
+          fill="none" stroke="url(#accentGradient)" stroke-width="16" stroke-linecap="round"/>
+  </g>
+
+  <!-- Radio waves (right side) -->
+  <g transform="translate(512, 480)" opacity="0.6">
+    <!-- Outer wave -->
+    <path d="M 180 -120 Q 280 0 180 120"
+          fill="none" stroke="url(#accentGradient)" stroke-width="16" stroke-linecap="round"/>
+    <!-- Middle wave -->
+    <path d="M 120 -80 Q 190 0 120 80"
+          fill="none" stroke="url(#accentGradient)" stroke-width="16" stroke-linecap="round"/>
+    <!-- Inner wave -->
+    <path d="M 60 -40 Q 100 0 60 40"
+          fill="none" stroke="url(#accentGradient)" stroke-width="16" stroke-linecap="round"/>
+  </g>
+
+  <!-- Control Tower Base -->
+  <g filter="url(#softGlow)">
+    <!-- Tower body -->
+    <path d="M 480 580 L 460 800 L 564 800 L 544 580 Z"
+          fill="#1e40af"/>
+
+    <!-- Tower cab (control room) -->
+    <rect x="440" y="460" width="144" height="120" rx="8" fill="url(#accentGradient)"/>
+
+    <!-- Windows -->
+    <rect x="456" y="480" width="112" height="50" rx="4" fill="#0f172a" opacity="0.6"/>
+
+    <!-- Window reflection -->
+    <rect x="460" y="484" width="50" height="42" rx="2" fill="#60a5fa" opacity="0.3"/>
+
+    <!-- Antenna base -->
+    <rect x="502" y="400" width="20" height="60" fill="url(#accentGradient)"/>
+
+    <!-- Antenna top -->
+    <circle cx="512" cy="380" r="20" fill="url(#accentGradient)"/>
+
+    <!-- Antenna light (blinking beacon) -->
+    <circle cx="512" cy="380" r="10" fill="#ef4444" filter="url(#glow)"/>
+  </g>
+
+  <!-- Airplane silhouette flying past -->
+  <g transform="translate(680, 320) rotate(15)" opacity="0.9">
+    <path d="M 0 0
+             L 80 -8
+             L 100 -10
+             L 105 -8
+             L 100 -5
+             L 60 0
+             L 70 20
+             L 60 18
+             L 50 5
+             L 20 8
+             L 25 25
+             L 15 22
+             L 5 8
+             L -20 10
+             L -25 5
+             L 0 0 Z"
+          fill="white"/>
+  </g>
+
+  <!-- "WILCO" text at bottom -->
+  <text x="512" y="900"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="100"
+        font-weight="bold"
+        fill="white"
+        text-anchor="middle"
+        letter-spacing="12">WILCO</text>
+
+  <!-- Subtle tagline -->
+  <text x="512" y="950"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="36"
+        fill="#64748b"
+        text-anchor="middle"
+        letter-spacing="4">ATC TRAINING</text>
+</svg>

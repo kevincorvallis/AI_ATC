@@ -9,7 +9,8 @@ const STORAGE_KEYS = {
 
 const DEFAULT_SETTINGS = {
     speechRate: 0.9,
-    autoPlayATC: true
+    autoPlayATC: true,
+    difficulty: 'beginner'
 };
 
 // Simple Event Bus

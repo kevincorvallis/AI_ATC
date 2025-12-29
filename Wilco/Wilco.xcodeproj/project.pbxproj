@@ -1,0 +1,653 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000001 /* WilcoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000001 /* WilcoApp.swift */; };
+		A10000002 /* Category.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000002 /* Category.swift */; };
+		A10000003 /* Difficulty.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000003 /* Difficulty.swift */; };
+		A10000004 /* Scenario.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000004 /* Scenario.swift */; };
+		A10000005 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000005 /* Message.swift */; };
+		A10000006 /* UserProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000006 /* UserProgress.swift */; };
+		A10000007 /* UserSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000007 /* UserSettings.swift */; };
+		A10000008 /* ATCRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000008 /* ATCRequest.swift */; };
+		A10000009 /* ATCResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000009 /* ATCResponse.swift */; };
+		A10000010 /* AppViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010 /* AppViewModel.swift */; };
+		A10000011 /* CategoriesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000011 /* CategoriesViewModel.swift */; };
+		A10000012 /* ScenariosViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000012 /* ScenariosViewModel.swift */; };
+		A10000013 /* TrainingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000013 /* TrainingViewModel.swift */; };
+		A10000014 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000014 /* SettingsViewModel.swift */; };
+		A10000015 /* ATCAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000015 /* ATCAPIService.swift */; };
+		A10000016 /* SpeechRecognitionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000016 /* SpeechRecognitionService.swift */; };
+		A10000017 /* StorageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000017 /* StorageService.swift */; };
+		A10000018 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000018 /* NetworkMonitor.swift */; };
+		A10000019 /* DemoModeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000019 /* DemoModeService.swift */; };
+		A10000020 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000020 /* RootView.swift */; };
+		A10000022 /* CategoryCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000022 /* CategoryCardView.swift */; };
+		A10000024 /* ScenarioRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000024 /* ScenarioRowView.swift */; };
+		A10000025 /* TrainingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000025 /* TrainingView.swift */; };
+		A10000026 /* RadioPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000026 /* RadioPanelView.swift */; };
+		A10000027 /* ConversationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000027 /* ConversationView.swift */; };
+		A10000028 /* MessageBubbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000028 /* MessageBubbleView.swift */; };
+		A10000029 /* InputControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000029 /* InputControlsView.swift */; };
+		A10000030 /* SuggestionChipsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000030 /* SuggestionChipsView.swift */; };
+		A10000031 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000031 /* SettingsView.swift */; };
+		A10000032 /* DifficultyBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000032 /* DifficultyBadge.swift */; };
+		A10000033 /* SignalIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000033 /* SignalIndicatorView.swift */; };
+		A10000034 /* ScenarioData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000034 /* ScenarioData.swift */; };
+		A10000035 /* Color+Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000035 /* Color+Theme.swift */; };
+		A10000036 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000036 /* Constants.swift */; };
+		A10000037 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000037 /* HapticManager.swift */; };
+		A10000038 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000038 /* Assets.xcassets */; };
+		A10000040 /* ATCExamples.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000040 /* ATCExamples.swift */; };
+		A10000041 /* DemoPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000041 /* DemoPlayerView.swift */; };
+		A10000042 /* DemoListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000042 /* DemoListView.swift */; };
+		A10000043 /* PhraseologyGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000043 /* PhraseologyGuideView.swift */; };
+		A10000044 /* ATCVoiceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000044 /* ATCVoiceService.swift */; };
+		A10000045 /* RadioSimulatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000045 /* RadioSimulatorView.swift */; };
+		A10000046 /* RadioSimulatorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000046 /* RadioSimulatorViewModel.swift */; };
+		A10000047 /* ATISInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000047 /* ATISInfo.swift */; };
+		A10000048 /* AircraftInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000048 /* AircraftInfo.swift */; };
+		A10000049 /* ScenarioBriefing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000049 /* ScenarioBriefing.swift */; };
+		A10000050 /* BriefingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000050 /* BriefingService.swift */; };
+		A10000051 /* ScenarioBriefingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000051 /* ScenarioBriefingView.swift */; };
+		A10000052 /* AirportDiagramView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000052 /* AirportDiagramView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A20000001 /* WilcoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WilcoApp.swift; sourceTree = "<group>"; };
+		A20000002 /* Category.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Category.swift; sourceTree = "<group>"; };
+		A20000003 /* Difficulty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Difficulty.swift; sourceTree = "<group>"; };
+		A20000004 /* Scenario.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scenario.swift; sourceTree = "<group>"; };
+		A20000005 /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
+		A20000006 /* UserProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProgress.swift; sourceTree = "<group>"; };
+		A20000007 /* UserSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSettings.swift; sourceTree = "<group>"; };
+		A20000008 /* ATCRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ATCRequest.swift; sourceTree = "<group>"; };
+		A20000009 /* ATCResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ATCResponse.swift; sourceTree = "<group>"; };
+		A20000010 /* AppViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewModel.swift; sourceTree = "<group>"; };
+		A20000011 /* CategoriesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoriesViewModel.swift; sourceTree = "<group>"; };
+		A20000012 /* ScenariosViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenariosViewModel.swift; sourceTree = "<group>"; };
+		A20000013 /* TrainingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingViewModel.swift; sourceTree = "<group>"; };
+		A20000014 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
+		A20000015 /* ATCAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ATCAPIService.swift; sourceTree = "<group>"; };
+		A20000016 /* SpeechRecognitionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionService.swift; sourceTree = "<group>"; };
+		A20000017 /* StorageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageService.swift; sourceTree = "<group>"; };
+		A20000018 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
+		A20000019 /* DemoModeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoModeService.swift; sourceTree = "<group>"; };
+		A20000020 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		A20000022 /* CategoryCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryCardView.swift; sourceTree = "<group>"; };
+		A20000024 /* ScenarioRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenarioRowView.swift; sourceTree = "<group>"; };
+		A20000025 /* TrainingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingView.swift; sourceTree = "<group>"; };
+		A20000026 /* RadioPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadioPanelView.swift; sourceTree = "<group>"; };
+		A20000027 /* ConversationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationView.swift; sourceTree = "<group>"; };
+		A20000028 /* MessageBubbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBubbleView.swift; sourceTree = "<group>"; };
+		A20000029 /* InputControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputControlsView.swift; sourceTree = "<group>"; };
+		A20000030 /* SuggestionChipsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuggestionChipsView.swift; sourceTree = "<group>"; };
+		A20000031 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A20000032 /* DifficultyBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DifficultyBadge.swift; sourceTree = "<group>"; };
+		A20000033 /* SignalIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalIndicatorView.swift; sourceTree = "<group>"; };
+		A20000034 /* ScenarioData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenarioData.swift; sourceTree = "<group>"; };
+		A20000035 /* Color+Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Theme.swift"; sourceTree = "<group>"; };
+		A20000036 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
+		A20000037 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
+		A20000038 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A20000039 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A20000040 /* ATCExamples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ATCExamples.swift; sourceTree = "<group>"; };
+		A20000041 /* DemoPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoPlayerView.swift; sourceTree = "<group>"; };
+		A20000042 /* DemoListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoListView.swift; sourceTree = "<group>"; };
+		A20000043 /* PhraseologyGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhraseologyGuideView.swift; sourceTree = "<group>"; };
+		A20000044 /* ATCVoiceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ATCVoiceService.swift; sourceTree = "<group>"; };
+		A20000045 /* RadioSimulatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadioSimulatorView.swift; sourceTree = "<group>"; };
+		A20000046 /* RadioSimulatorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadioSimulatorViewModel.swift; sourceTree = "<group>"; };
+		A20000047 /* ATISInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ATISInfo.swift; sourceTree = "<group>"; };
+		A20000048 /* AircraftInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AircraftInfo.swift; sourceTree = "<group>"; };
+		A20000049 /* ScenarioBriefing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenarioBriefing.swift; sourceTree = "<group>"; };
+		A20000050 /* BriefingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BriefingService.swift; sourceTree = "<group>"; };
+		A20000051 /* ScenarioBriefingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenarioBriefingView.swift; sourceTree = "<group>"; };
+		A20000052 /* AirportDiagramView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirportDiagramView.swift; sourceTree = "<group>"; };
+		A30000001 /* Wilco.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Wilco.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A40000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A50000001 = {
+			isa = PBXGroup;
+			children = (
+				A50000002 /*  */,
+				A50000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A50000002 /*  */ = {
+			isa = PBXGroup;
+			children = (
+				A50000004 /* App */,
+				A50000005 /* Models */,
+				A50000006 /* ViewModels */,
+				A50000007 /* Services */,
+				A50000008 /* Views */,
+				A50000009 /* Resources */,
+				A50000010 /* Extensions */,
+				A50000011 /* Utilities */,
+				A20000039 /* Info.plist */,
+			);
+			name = "";
+			sourceTree = "<group>";
+		};
+		A50000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A30000001 /* Wilco.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A50000004 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				A20000001 /* WilcoApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		A50000005 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A20000002 /* Category.swift */,
+				A20000003 /* Difficulty.swift */,
+				A20000004 /* Scenario.swift */,
+				A20000005 /* Message.swift */,
+				A20000006 /* UserProgress.swift */,
+				A20000007 /* UserSettings.swift */,
+				A20000047 /* ATISInfo.swift */,
+				A20000048 /* AircraftInfo.swift */,
+				A20000049 /* ScenarioBriefing.swift */,
+				A50000012 /* API */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A50000006 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				A20000010 /* AppViewModel.swift */,
+				A20000011 /* CategoriesViewModel.swift */,
+				A20000012 /* ScenariosViewModel.swift */,
+				A20000013 /* TrainingViewModel.swift */,
+				A20000014 /* SettingsViewModel.swift */,
+				A20000046 /* RadioSimulatorViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		A50000007 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				A20000015 /* ATCAPIService.swift */,
+				A20000016 /* SpeechRecognitionService.swift */,
+				A20000017 /* StorageService.swift */,
+				A20000018 /* NetworkMonitor.swift */,
+				A20000019 /* DemoModeService.swift */,
+				A20000044 /* ATCVoiceService.swift */,
+				A20000050 /* BriefingService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		A50000008 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A20000020 /* RootView.swift */,
+				A50000013 /* Categories */,
+				A50000014 /* Scenarios */,
+				A50000015 /* Training */,
+				A50000016 /* Settings */,
+				A50000017 /* Components */,
+				A50000018 /* Demo */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		A50000009 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A20000034 /* ScenarioData.swift */,
+				A20000040 /* ATCExamples.swift */,
+				A20000038 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		A50000010 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				A20000035 /* Color+Theme.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		A50000011 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				A20000036 /* Constants.swift */,
+				A20000037 /* HapticManager.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		A50000012 /* API */ = {
+			isa = PBXGroup;
+			children = (
+				A20000008 /* ATCRequest.swift */,
+				A20000009 /* ATCResponse.swift */,
+			);
+			path = API;
+			sourceTree = "<group>";
+		};
+		A50000013 /* Categories */ = {
+			isa = PBXGroup;
+			children = (
+				A20000022 /* CategoryCardView.swift */,
+			);
+			path = Categories;
+			sourceTree = "<group>";
+		};
+		A50000014 /* Scenarios */ = {
+			isa = PBXGroup;
+			children = (
+				A20000024 /* ScenarioRowView.swift */,
+			);
+			path = Scenarios;
+			sourceTree = "<group>";
+		};
+		A50000015 /* Training */ = {
+			isa = PBXGroup;
+			children = (
+				A20000025 /* TrainingView.swift */,
+				A20000026 /* RadioPanelView.swift */,
+				A20000027 /* ConversationView.swift */,
+				A20000028 /* MessageBubbleView.swift */,
+				A20000029 /* InputControlsView.swift */,
+				A20000030 /* SuggestionChipsView.swift */,
+				A20000045 /* RadioSimulatorView.swift */,
+				A20000051 /* ScenarioBriefingView.swift */,
+			);
+			path = Training;
+			sourceTree = "<group>";
+		};
+		A50000016 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				A20000031 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		A50000017 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				A20000032 /* DifficultyBadge.swift */,
+				A20000033 /* SignalIndicatorView.swift */,
+				A20000052 /* AirportDiagramView.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		A50000018 /* Demo */ = {
+			isa = PBXGroup;
+			children = (
+				A20000041 /* DemoPlayerView.swift */,
+				A20000042 /* DemoListView.swift */,
+				A20000043 /* PhraseologyGuideView.swift */,
+			);
+			path = Demo;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A60000001 /* Wilco */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A70000001 /* Build configuration list for PBXNativeTarget "Wilco" */;
+			buildPhases = (
+				A80000001 /* Sources */,
+				A40000001 /* Frameworks */,
+				A90000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Wilco;
+			productName = Wilco;
+			productReference = A30000001 /* Wilco.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AB0000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 2620;
+				TargetAttributes = {
+					A60000001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = AC0000001 /* Build configuration list for PBXProject "Wilco" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A50000001;
+			productRefGroup = A50000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A60000001 /* Wilco */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A90000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000038 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A80000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000001 /* WilcoApp.swift in Sources */,
+				A10000002 /* Category.swift in Sources */,
+				A10000003 /* Difficulty.swift in Sources */,
+				A10000004 /* Scenario.swift in Sources */,
+				A10000005 /* Message.swift in Sources */,
+				A10000006 /* UserProgress.swift in Sources */,
+				A10000007 /* UserSettings.swift in Sources */,
+				A10000008 /* ATCRequest.swift in Sources */,
+				A10000009 /* ATCResponse.swift in Sources */,
+				A10000010 /* AppViewModel.swift in Sources */,
+				A10000011 /* CategoriesViewModel.swift in Sources */,
+				A10000012 /* ScenariosViewModel.swift in Sources */,
+				A10000013 /* TrainingViewModel.swift in Sources */,
+				A10000014 /* SettingsViewModel.swift in Sources */,
+				A10000015 /* ATCAPIService.swift in Sources */,
+				A10000016 /* SpeechRecognitionService.swift in Sources */,
+				A10000017 /* StorageService.swift in Sources */,
+				A10000018 /* NetworkMonitor.swift in Sources */,
+				A10000019 /* DemoModeService.swift in Sources */,
+				A10000020 /* RootView.swift in Sources */,
+				A10000022 /* CategoryCardView.swift in Sources */,
+				A10000024 /* ScenarioRowView.swift in Sources */,
+				A10000025 /* TrainingView.swift in Sources */,
+				A10000026 /* RadioPanelView.swift in Sources */,
+				A10000027 /* ConversationView.swift in Sources */,
+				A10000028 /* MessageBubbleView.swift in Sources */,
+				A10000029 /* InputControlsView.swift in Sources */,
+				A10000030 /* SuggestionChipsView.swift in Sources */,
+				A10000031 /* SettingsView.swift in Sources */,
+				A10000032 /* DifficultyBadge.swift in Sources */,
+				A10000033 /* SignalIndicatorView.swift in Sources */,
+				A10000034 /* ScenarioData.swift in Sources */,
+				A10000035 /* Color+Theme.swift in Sources */,
+				A10000036 /* Constants.swift in Sources */,
+				A10000037 /* HapticManager.swift in Sources */,
+				A10000040 /* ATCExamples.swift in Sources */,
+				A10000041 /* DemoPlayerView.swift in Sources */,
+				A10000042 /* DemoListView.swift in Sources */,
+				A10000043 /* PhraseologyGuideView.swift in Sources */,
+				A10000044 /* ATCVoiceService.swift in Sources */,
+				A10000045 /* RadioSimulatorView.swift in Sources */,
+				A10000046 /* RadioSimulatorViewModel.swift in Sources */,
+				A10000047 /* ATISInfo.swift in Sources */,
+				A10000048 /* AircraftInfo.swift in Sources */,
+				A10000049 /* ScenarioBriefing.swift in Sources */,
+				A10000050 /* BriefingService.swift in Sources */,
+				A10000051 /* ScenarioBriefingView.swift in Sources */,
+				A10000052 /* AirportDiagramView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		AD0000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 4F8Q446767;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		AD0000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 4F8Q446767;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		AE0000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Wilco;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wilco.atctraining;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AE0000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Wilco;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wilco.atctraining;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A70000001 /* Build configuration list for PBXNativeTarget "Wilco" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AE0000001 /* Debug */,
+				AE0000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AC0000001 /* Build configuration list for PBXProject "Wilco" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AD0000001 /* Debug */,
+				AD0000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = AB0000001 /* Project object */;
+}

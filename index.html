@@ -115,6 +115,20 @@
                 </div>
                 <div class="settings-content">
                     <div class="settings-section">
+                        <h3>Training Settings</h3>
+                        <div class="setting-item">
+                            <label for="difficultySelect">Difficulty Level:</label>
+                            <select id="difficultySelect" class="difficulty-select">
+                                <option value="beginner">Student Pilot - Detailed feedback every transmission</option>
+                                <option value="intermediate">Private Pilot - Moderate feedback</option>
+                                <option value="advanced">Experienced Pilot - Minimal feedback (realistic)</option>
+                            </select>
+                            <p class="setting-description">
+                                Choose your experience level to adjust feedback detail and training assistance.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="settings-section">
                         <h3>Progress</h3>
                         <div class="stats-display">
                             <div class="stat-item">
@@ -145,6 +159,10 @@
     <script src="core.js"></script>
     <script src="config.js"></script>
     <script src="scenarios-config.js"></script>
+    <script src="phraseology.js"></script>
+    <script src="scenario-state.js"></script>
+    <script src="aviation-visual.js"></script>
+    <script src="feedback-engine.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
