@@ -46,6 +46,12 @@ body {
     border-bottom: 1px solid var(--border);
 }
 
+.nav-right {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
 .nav-btn {
     background: var(--surface);
     border: 1px solid var(--border);

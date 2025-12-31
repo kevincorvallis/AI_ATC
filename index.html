@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="demo-styles.css">
 </head>
 <body>
     <div class="container">
@@ -17,9 +18,17 @@
             <button class="nav-btn back-btn" id="backButton" style="display: none;">
                 <span>← Back</span>
             </button>
-            <button class="nav-btn settings-btn" id="settingsButton">
-                <span>Settings</span>
-            </button>
+            <div class="nav-right">
+                <button class="nav-btn demo-btn" id="demoButton">
+                    <span>📺 Demo</span>
+                </button>
+                <button class="nav-btn help-btn" id="helpButton">
+                    <span>? Help</span>
+                </button>
+                <button class="nav-btn settings-btn" id="settingsButton">
+                    <span>⚙️ Settings</span>
+                </button>
+            </div>
         </nav>
 
         <!-- Header -->
@@ -163,6 +172,8 @@
     <script src="scenario-state.js"></script>
     <script src="aviation-visual.js"></script>
     <script src="feedback-engine.js"></script>
+    <script src="demo-data.js"></script>
+    <script src="demo-onboarding.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

@@ -210,6 +210,26 @@ class ATCTrainingApp {
             });
         }
 
+        // Demo button
+        const demoBtn = document.getElementById('demoButton');
+        if (demoBtn) {
+            demoBtn.addEventListener('click', () => {
+                if (window.demoPlayer) {
+                    window.demoPlayer.showSelector();
+                }
+            });
+        }
+
+        // Help button
+        const helpBtn = document.getElementById('helpButton');
+        if (helpBtn) {
+            helpBtn.addEventListener('click', () => {
+                if (window.helpGuide) {
+                    window.helpGuide.show();
+                }
+            });
+        }
+
         // Settings
         this.initSettings();
     }
