@@ -1,4 +1,8 @@
-# AI ATC Training System - Claude Agent Context
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+# AI ATC Training System
 
 ## Project Overview
 AI-powered Air Traffic Control training system for practicing radio communications. Users select scenarios and practice transmissions via text input, receiving realistic ATC responses.
@@ -200,7 +204,6 @@ API_GATEWAY_NAME=ai-atc-api
 
 ### Run Frontend
 ```bash
-cd /Users/kevin/Downloads/AI_ATC
 python3 -m http.server 8000
 # Visit http://localhost:8000
 ```
@@ -228,18 +231,37 @@ AI_ATC/
 ├── index.html              # Main UI (3 views: categories/scenarios/training)
 ├── app.js                  # Application logic, ATCTrainingApp class
 ├── styles.css              # All styling
+├── demo-styles.css         # Demo/onboarding styles
 ├── core.js                 # Settings/Progress managers, EventBus
 ├── config.js               # API_ENDPOINT configuration
 ├── scenarios-config.js     # TRAINING_SCENARIOS data
+├── voice.js                # Speech-to-text / text-to-speech (Web Speech API)
+├── weather.js              # METAR weather fetching
+├── visualization.js        # Traffic pattern canvas visualization
+├── phraseology-scorer.js   # Scores pilot phraseology accuracy
+├── phraseology.js          # Phraseology validation rules
+├── scenario-state.js       # State machine for flight phase tracking
+├── feedback-engine.js      # Real-time transmission feedback
+├── aviation-visual.js      # Visual flight position indicator
+├── demo-data.js            # Pre-programmed demo responses
+├── demo-onboarding.js      # Interactive onboarding system
 ├── .env                    # Environment variables (gitignored)
 ├── .env.example            # Template for .env
 ├── backend/
-│   ├── lambda_function.py  # Lambda handler (OpenAI integration)
-│   ├── requirements.txt    # Python deps: openai, boto3
+│   ├── lambda_function.py  # Lambda handler (OpenAI + Aviation API)
+│   ├── requirements.txt    # Python deps: openai, boto3, langchain (disabled)
 │   └── deploy.sh           # AWS deployment script
 └── .claude/
     └── settings.local.json # Claude Code permissions
 ```
+
+## Key Patterns
+
+- Enhancement modules attach to `window` globals (e.g., `window.voiceManager`, `window.scenarioStateMachine`). `app.js` polls for them in `initModules()`.
+- Conversations persist to `localStorage` and can be restored within 30 minutes.
+- The Lambda routes by checking for `action` field in the request body (`generate_scenario`, `get_charts`), otherwise treats it as an ATC response request.
+- Scenario system prompts in `SCENARIO_PROMPTS` dict in `lambda_function.py` contain detailed ATC personality and phraseology rules — these are critical to response quality.
+- LangChain is in requirements.txt but disabled (needs Rust compiler for tiktoken). Uses direct OpenAI API via `get_atc_response_direct()`.
 
 ---
 
@@ -271,26 +293,24 @@ class ATCTrainingApp {
 
 ### Backend (lambda_function.py)
 ```python
-def lambda_handler(event, context)      # Main entry point
-def get_atc_response(scenario, history, message, custom_prompt)  # GPT-4 call
-def generate_custom_scenario(prompt)    # Create custom scenarios
-def get_airport_charts(icao)            # Fetch FAA charts
-def validate_custom_prompt(prompt)      # Security: prevent injection
+def lambda_handler(event, context)           # Main entry point, routes by action
+def get_atc_response(scenario, history, message, custom_prompt)  # Orchestrator
+def get_atc_response_direct(system_prompt, history, message)     # Direct OpenAI call
+def get_atc_response_langchain(system_prompt, history, message)  # LangChain path (disabled)
+def generate_custom_scenario(prompt)         # Create custom scenarios via GPT-4
+def get_airport_charts(icao)                 # Fetch FAA charts from Aviation API
+def validate_custom_prompt(prompt)           # Security: prevent prompt injection
 ```
 
 ---
 
-## Permissions (Claude Code)
+## Claude Code Skills
 
-Available without approval:
-- `aws lambda get-function:*`
-- `aws lambda update-function-code:*`
-- `aws lambda list-functions:*`
-- `aws logs describe-log-streams:*`
-- `aws logs get-log-events:*`
-- `curl:*`
-- `python3:*`
-- `git add/commit/push/checkout:*`
+- `/update-lambda` — Quick Lambda code update without full redeployment
+- `/check-logs` — Check latest CloudWatch logs for ai-atc-function
+- `/deploy-lambda` — Full backend deployment
+- `/test-api` — Test the ATC API endpoint
+- `/serve` — Start local dev server
 
 ---
 
