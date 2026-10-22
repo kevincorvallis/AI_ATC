@@ -3,18 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI ATC Training System</title>
+    <title>Wilco — Practice your next radio call</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="description" content="Get comfortable on the radio with a five-minute guided departure lesson. Listen, speak or type, get specific feedback, and practice what you missed.">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="demo-styles.css">
+    <link rel="stylesheet" href="lesson.css">
 </head>
 <body>
+    <a class="skip-link" href="#categorySelection">Skip to training content</a>
+    <noscript><p class="training-notice">This interactive demo needs JavaScript. Enable JavaScript to explore the practice scenarios.</p></noscript>
     <div class="container">
         <!-- Navigation -->
-        <nav class="nav-bar">
+        <nav class="nav-bar" aria-label="Training navigation">
             <button class="nav-btn back-btn" id="backButton" style="display: none;">
                 <span>← Back</span>
             </button>
@@ -33,47 +35,66 @@
 
         <!-- Header -->
         <header>
-            <h1>ATC Training System</h1>
-            <p class="subtitle">AI-powered ATC communication training</p>
+            <h1>Wilco</h1>
+            <p class="subtitle">Get comfortable on the radio.</p>
+            <p class="mode-label" id="modeLabel">Scripted practice · no account required</p>
+            <p class="training-notice">Illustrative simulation only. Responses, scores, frequencies, and diagrams are not for real flight operations or a substitute for qualified instruction.</p>
         </header>
 
         <!-- View 1: Category Selection (Home) -->
-        <div class="category-selection" id="categorySelection">
-            <h2>Select Training Category</h2>
+        <main class="category-selection" id="categorySelection" tabindex="-1">
+            <section class="lesson-home-card" aria-labelledby="departureHomeTitle">
+                <div class="lesson-home-copy">
+                    <p class="lesson-home-duration">About 5 minutes / 6 radio calls</p>
+                    <h2 id="departureHomeTitle">Your first towered departure</h2>
+                    <p>Practice a departure at fictional Metro Airport. Start with an example, then find your own words as the hints fade.</p>
+                    <p>Listen. Speak or type. Get one useful correction and try again.</p>
+                    <button type="button" id="startDepartureLesson" class="lesson-home-start">Start departure lesson</button>
+                    <p id="departureRecent" class="lesson-home-recent" aria-live="polite"></p>
+                </div>
+                <ol class="lesson-home-route" aria-label="Lesson route">
+                    <li><strong>Ground</strong><span>Make contact and read back your taxi instructions.</span></li>
+                    <li><strong>Tower</strong><span>Change frequency and practice holding short.</span></li>
+                    <li><strong>Departure</strong><span>Read back a clearance, then review what to practice.</span></li>
+                </ol>
+            </section>
+            <h2>Explore individual scenarios</h2>
             <div class="category-cards">
-                <div class="category-card" data-category="pattern_work">
+                <button type="button" class="category-card" data-category="pattern_work">
                     <h3>Pattern Work</h3>
                     <p>Traffic pattern communications at towered airports</p>
                     <span class="scenario-count">5 Scenarios</span>
-                </div>
-                <div class="category-card" data-category="ground_operations">
+                </button>
+                <button type="button" class="category-card" data-category="ground_operations">
                     <h3>Ground Operations</h3>
                     <p>Taxi clearances and ground communication</p>
                     <span class="scenario-count">5 Scenarios</span>
-                </div>
-                <div class="category-card" data-category="flight_following">
+                </button>
+                <button type="button" class="category-card" data-category="flight_following">
                     <h3>Flight Following</h3>
                     <p>VFR flight following and radar services</p>
                     <span class="scenario-count">5 Scenarios</span>
-                </div>
-                <div class="category-card" data-category="emergency">
+                </button>
+                <button type="button" class="category-card" data-category="emergency">
                     <h3>Emergency Procedures</h3>
                     <p>Emergency communications and procedures</p>
                     <span class="scenario-count">5 Scenarios</span>
-                </div>
+                </button>
             </div>
-        </div>
+        </main>
+
+        <main class="departure-lesson" id="departureLesson" tabindex="-1" style="display: none;" aria-label="Guided departure lesson"></main>
 
         <!-- View 2: Scenario Selection -->
-        <div class="scenario-selection" id="scenarioSelection" style="display: none;">
+        <main class="scenario-selection" id="scenarioSelection" tabindex="-1" style="display: none;">
             <h2 id="categoryTitle">Select Scenario</h2>
             <div id="scenariosContainer" class="scenarios-list">
                 <!-- Populated by JavaScript -->
             </div>
-        </div>
+        </main>
 
         <!-- View 3: Training Interface -->
-        <div class="training-interface" id="trainingInterface" style="display: none;">
+        <main class="training-interface" id="trainingInterface" tabindex="-1" style="display: none;">
             <div class="scenario-info">
                 <h2 id="currentScenarioTitle"></h2>
                 <p id="currentScenarioDesc"></p>
@@ -89,7 +110,7 @@
             </div>
 
             <!-- Conversation -->
-            <div class="conversation" id="conversation">
+            <div class="conversation" id="conversation" role="log" aria-label="Practice conversation" aria-live="polite" aria-relevant="additions text">
                 <div class="message system-message">
                     <p>Ready. Type your transmission and press Enter or click Transmit.</p>
                 </div>
@@ -107,12 +128,13 @@
 
                 <!-- Text Input -->
                 <div class="text-input-container">
-                    <input type="text" id="pilotInput" class="pilot-input" placeholder="Type your transmission..." autocomplete="off" />
+                    <label class="sr-only" for="pilotInput">Your pilot transmission</label>
+                    <input type="text" id="pilotInput" maxlength="1000" class="pilot-input" placeholder="Type your transmission..." autocomplete="off" />
                     <button class="transmit-button" id="transmitButton">Transmit</button>
                 </div>
-                <div class="status" id="status">Ready</div>
+                <div class="status" id="status" role="status" aria-live="polite">Ready</div>
             </div>
-        </div>
+        </main>
 
         <!-- Settings Modal -->
         <div class="settings-modal" id="settingsModal" style="display: none;">
@@ -120,7 +142,7 @@
             <div class="settings-panel">
                 <div class="settings-header">
                     <h2>Settings</h2>
-                    <button class="settings-close" id="closeSettings">×</button>
+                    <button class="settings-close" id="closeSettings" aria-label="Close settings">×</button>
                 </div>
                 <div class="settings-content">
                     <div class="settings-section">
@@ -160,7 +182,7 @@
 
         <!-- Footer -->
         <footer>
-            <p>Practice makes perfect. Fly safe!</p>
+            <p>Progress stays in this browser. Voice input may use your browser's speech service.</p>
         </footer>
     </div>
 
@@ -175,5 +197,8 @@
     <script src="demo-data.js"></script>
     <script src="demo-onboarding.js"></script>
     <script src="app.js"></script>
+    <script src="lesson-engine.js"></script>
+    <script src="lesson-voice.js"></script>
+    <script src="lesson-ui.js"></script>
 </body>
 </html>

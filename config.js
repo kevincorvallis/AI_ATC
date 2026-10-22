@@ -1,5 +1,8 @@
-// API Configuration
-// After deploying the backend, paste your API Gateway endpoint URL here
-const API_ENDPOINT = 'https://3zk0d6e54l.execute-api.us-east-1.amazonaws.com/atc';
-
-// Example: const API_ENDPOINT = 'https://abc123.execute-api.us-east-1.amazonaws.com/atc';
+// Controller replies and practice feedback run locally, with no paid API or key.
+// Optional browser speech recognition may use the browser vendor's service.
+// Live mode is an explicit operator configuration. Use an authenticated HTTPS API.
+const ATC_CONFIG = Object.freeze({
+    mode: 'demo',
+    apiEndpoint: '',
+    requestTimeoutMs: 15000
+});

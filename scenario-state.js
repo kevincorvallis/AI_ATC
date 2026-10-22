@@ -103,6 +103,7 @@ class ScenarioStateMachine {
      * Update state based on communication
      */
     update(pilotMessage, atcMessage) {
+        if (!this.scenario || this.currentPhase === 'complete') return this.getCurrentState();
         this.history.push({
             timestamp: new Date(),
             pilot: pilotMessage,
@@ -111,10 +112,10 @@ class ScenarioStateMachine {
         });
 
         // Analyze messages to determine if we should advance
-        const shouldAdvance = this.shouldAdvancePhase(pilotMessage, atcMessage);
-
-        if (shouldAdvance) {
-            this.advancePhase();
+        const nextPhase = this.getNextPhase(pilotMessage, atcMessage);
+        if (nextPhase && nextPhase !== this.currentPhase) {
+            if (!this.completedPhases.includes(this.currentPhase)) this.completedPhases.push(this.currentPhase);
+            this.currentPhase = nextPhase;
         }
 
         return this.getCurrentState();
@@ -124,47 +125,59 @@ class ScenarioStateMachine {
      * Determine if phase should advance based on communications
      */
     shouldAdvancePhase(pilotMessage, atcMessage) {
-        if (!pilotMessage || !atcMessage) return false;
+        const next = this.getNextPhase(pilotMessage, atcMessage);
+        return Boolean(next && next !== this.currentPhase);
+    }
 
+    getNextPhase(pilotMessage, atcMessage) {
+        if (typeof pilotMessage !== 'string' || typeof atcMessage !== 'string') return null;
         const pilot = pilotMessage.toLowerCase();
         const atc = atcMessage.toLowerCase();
         const phase = this.currentPhase;
+        if (!pilot.trim() || !atc.trim() || phase === 'complete') return null;
 
-        // Pattern work transitions
+        // A response can contain the clearance and the next instruction together.
+        // Move to the action now expected, without discarding either instruction.
         if (this.scenario === 'pattern_work') {
-            if (phase === 'initial_contact' && pilot.includes('ready')) return true;
-            if (phase === 'departure_ready' && atc.includes('cleared for takeoff')) return true;
-            if (phase === 'takeoff_clearance' && pilot.includes('cleared')) return true;
-            if (phase === 'crosswind' || (atc.includes('report') && atc.includes('downwind'))) return true;
-            if (phase === 'downwind' && (pilot.includes('base') || atc.includes('base'))) return true;
-            if (phase === 'base' && (pilot.includes('final') || atc.includes('final') || atc.includes('cleared to land'))) return true;
-            if (phase === 'final' && atc.includes('cleared to land')) return true;
-            if (phase === 'landing' && (pilot.includes('downwind') || pilot.includes('clear'))) return true;
+            if (/\b(clear of|runway vacated|off the runway)\b/.test(pilot)) return 'complete';
+            if (['initial_contact', 'departure_ready'].includes(phase)) {
+                if (atc.includes('cleared for takeoff')) return 'takeoff_clearance';
+                if (pilot.includes('ready')) return 'departure_ready';
+            }
+            if (phase === 'takeoff_clearance' && pilot.includes('cleared for takeoff')) return 'crosswind';
+            if (['crosswind', 'downwind', 'landing'].includes(phase) && pilot.includes('downwind')) return 'base';
+            if (phase === 'crosswind' && pilot.includes('crosswind')) return 'downwind';
+            if (phase === 'base' && pilot.includes('base')) return 'final';
+            if (['base', 'final'].includes(phase) && (pilot.includes('final') || pilot.includes('cleared to land'))) return 'landing';
+            if (phase === 'landing' && pilot.includes('touch and go')) return 'downwind';
         }
-
-        // Ground operations transitions
         if (this.scenario === 'ground_operations') {
-            if (phase === 'initial_contact' && atc.includes('taxi')) return true;
-            if (phase === 'taxi_clearance' && pilot.includes('taxi')) return true;
-            if (phase === 'taxiing' && pilot.includes('holding short')) return true;
-            if (phase === 'holding_short' && atc.includes('contact tower')) return true;
+            if (['initial_contact', 'taxi_clearance'].includes(phase)) {
+                if (phase === 'initial_contact' && atc.includes('taxi')) return 'taxi_clearance';
+                if (phase === 'taxi_clearance' && pilot.includes('taxi') && /hold(?:ing)? short/.test(pilot)) return 'taxiing';
+            }
+            if (['taxiing', 'holding_short', 'taxi_clearance'].includes(phase) && /contact (?:\w+ )?tower/.test(atc)) return 'contact_tower';
+            if (phase === 'taxiing' && /hold(?:ing)? short/.test(pilot)) return 'holding_short';
+            if (phase === 'contact_tower' && /\b(tower|contact|1[12]\d\.\d+)\b/.test(pilot)) return 'complete';
         }
-
-        // Flight following transitions
         if (this.scenario === 'flight_following') {
-            if (phase === 'initial_request' && atc.includes('squawk')) return true;
-            if (phase === 'radar_contact' || (atc.includes('radar contact'))) return true;
-            if (phase === 'enroute' && (pilot.includes('position') || pilot.includes('level'))) return true;
+            if (phase === 'frequency_change' && /\b(contact|frequency|roger|1[12]\d\.\d+)\b/.test(pilot)) return 'complete';
+            if (phase !== 'initial_request' && /\b(contact (?!established)|frequency change|radar service terminated)\b/.test(atc) && !atc.includes('radar contact')) return 'frequency_change';
+            if (phase === 'initial_request' && atc.includes('squawk')) return 'radar_contact';
+            if (phase === 'initial_request' && atc.includes('radar contact')) return 'enroute';
+            if (phase === 'radar_contact' && /\b(squawk|radar contact)\b/.test(pilot + ' ' + atc)) return 'enroute';
+            if (phase === 'enroute' && /report (?:your )?position/.test(atc)) return 'position_report';
+            if (phase === 'position_report' && /\b(position|miles|level|north|south|east|west)\b/.test(pilot)) return 'enroute';
         }
-
-        // Emergency transitions
         if (this.scenario === 'emergency') {
-            if (phase === 'emergency_declaration' && atc.includes('emergency')) return true;
-            if (phase === 'provide_info' && pilot.includes('souls')) return true;
-            if (phase === 'assistance' && (atc.includes('cleared') || atc.includes('vectors'))) return true;
+            if (phase === 'emergency_declaration' && /\b(emergency|mayday|pan pan)\b/.test(pilot)) return 'provide_info';
+            if (phase === 'provide_info' && /\b(souls|persons|people|on board)\b/.test(pilot) && pilot.includes('fuel')) {
+                return /\b(cleared|vectors|heading)\b/.test(atc) ? 'resolution' : 'assistance';
+            }
+            if (phase === 'assistance' && /\b(cleared|vectors|heading)\b/.test(atc)) return 'resolution';
+            if (phase === 'resolution' && /\b(landed|on the ground|clear of|emergency resolved)\b/.test(pilot)) return 'complete';
         }
-
-        return false;
+        return null;
     }
 
     /**
@@ -184,7 +197,9 @@ class ScenarioStateMachine {
 
         // Find next phase in flow
         const nextPhase = flow.find(p => p.id === nextPhaseId);
-        if (nextPhase) {
+        if (nextPhaseId === 'complete') {
+            this.currentPhase = 'complete';
+        } else if (nextPhase) {
             this.currentPhase = nextPhase.id;
         }
     }
@@ -195,16 +210,16 @@ class ScenarioStateMachine {
     getCurrentState() {
         const flow = this.stateFlows[this.scenario] || [];
         const currentPhaseObj = flow.find(p => p.id === this.currentPhase);
-        const expectations = this.phaseExpectations[this.currentPhase] || {};
+        const expectations = this.getExpectations();
 
         return {
             scenario: this.scenario,
             phase: this.currentPhase,
-            phaseName: currentPhaseObj?.name || 'Unknown',
-            phaseNumber: flow.findIndex(p => p.id === this.currentPhase) + 1,
+            phaseName: this.currentPhase === 'complete' ? 'Practice Complete' : (currentPhaseObj?.name || 'Not Started'),
+            phaseNumber: this.currentPhase === 'complete' ? flow.length : flow.findIndex(p => p.id === this.currentPhase) + 1,
             totalPhases: flow.length,
             expectations,
-            completedPhases: this.completedPhases,
+            completedPhases: [...this.completedPhases],
             progress: this.getProgress()
         };
     }
@@ -215,16 +230,17 @@ class ScenarioStateMachine {
     getProgress() {
         const flow = this.stateFlows[this.scenario] || [];
         if (flow.length === 0) return 0;
+        if (this.currentPhase === 'complete') return 100;
 
         const currentIndex = flow.findIndex(p => p.id === this.currentPhase);
-        return Math.round(((currentIndex + 1) / flow.length) * 100);
+        return Math.max(0, Math.round((currentIndex / flow.length) * 100));
     }
 
     /**
      * Get contextual hint for current phase
      */
     getCurrentHint() {
-        const expectations = this.phaseExpectations[this.currentPhase];
+        const expectations = this.getExpectations();
         if (!expectations) return null;
 
         return {
@@ -233,6 +249,33 @@ class ScenarioStateMachine {
             example: expectations.example,
             atcWillDo: expectations.atc_typically
         };
+    }
+
+    getExpectations() {
+        if (this.currentPhase === 'initial_contact' && this.scenario === 'pattern_work') return {
+            pilot_should: 'Contact tower with callsign, runway, and intentions',
+            example: 'Metro Tower, Cessna 12345, ready for departure runway 27, remaining in the pattern',
+            atc_typically: 'Issues instructions or a takeoff clearance'
+        };
+        const additional = {
+            crosswind: ['Report downwind when requested', 'Cessna 12345, left downwind runway 27'],
+            taxiing: ['Follow the taxi clearance and report holding short', 'Cessna 12345, holding short runway 27'],
+            contact_tower: ['Read back the assigned tower frequency', 'Contact tower 118.3, Cessna 12345'],
+            initial_request: ['Request VFR flight following', 'Approach, Cessna 12345, request VFR flight following'],
+            radar_contact: ['Read back the assigned squawk code', 'Squawk 4521, Cessna 12345'],
+            enroute: ['Listen for traffic advisories and further instructions', 'Cessna 12345, traffic in sight'],
+            position_report: ['Report your position and altitude', 'Cessna 12345, 10 miles north, level 4,500'],
+            frequency_change: ['Acknowledge the frequency change', 'Contact approach 124.35, Cessna 12345'],
+            emergency_declaration: ['State the emergency, callsign, and assistance needed', 'Mayday, Cessna 12345, engine failure, request assistance'],
+            provide_info: ['Provide persons on board and fuel remaining when requested', 'Cessna 12345, two persons on board, one hour fuel remaining'],
+            assistance: ['State your intentions and respond to controller instructions', 'Cessna 12345, request vectors to the nearest airport'],
+            resolution: ['Continue the practice emergency sequence', 'Cessna 12345, landed, emergency resolved'],
+            landing: ['Report clear of the runway, or continue the practice pattern', 'Cessna 12345, clear of runway 27'],
+            complete: ['Practice sequence complete. Review feedback or choose another scenario.', '']
+        };
+        if (this.phaseExpectations[this.currentPhase]) return this.phaseExpectations[this.currentPhase];
+        const value = additional[this.currentPhase];
+        return value ? { pilot_should: value[0], example: value[1], atc_typically: '' } : {};
     }
 
     /**
@@ -252,7 +295,7 @@ class ScenarioStateMachine {
         return {
             scenario: this.scenario,
             totalExchanges: this.history.length,
-            completedPhases: this.completedPhases,
+            completedPhases: [...this.completedPhases],
             currentPhase: this.currentPhase,
             duration: this.history.length > 0 ?
                 new Date() - this.history[0].timestamp : 0

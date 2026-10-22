@@ -7,6 +7,8 @@ final class ATCVoiceService: NSObject, AVSpeechSynthesizerDelegate, @unchecked S
 
     private let synthesizer = AVSpeechSynthesizer()
     private var audioPlayer: AVAudioPlayer?
+    @MainActor private var pendingSpeech: Task<Void, Never>?
+    @MainActor private var currentUtterance: AVSpeechUtterance?
 
     // Published state for UI observation
     @MainActor var isSpeaking: Bool = false
@@ -33,10 +35,8 @@ final class ATCVoiceService: NSObject, AVSpeechSynthesizerDelegate, @unchecked S
     /// Speak ATC response with radio-style voice
     @MainActor
     func speakATC(_ text: String, completion: (() -> Void)? = nil) {
-        // Stop any current speech
-        if synthesizer.isSpeaking {
-            synthesizer.stopSpeaking(at: .immediate)
-        }
+        // Cancel both queued and active speech before replacing it.
+        stopSpeaking()
 
         onFinishedSpeaking = completion
 
@@ -44,8 +44,9 @@ final class ATCVoiceService: NSObject, AVSpeechSynthesizerDelegate, @unchecked S
         playRadioClick()
 
         // Small delay for radio click, then speak
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(150))
+        pendingSpeech = Task { @MainActor in
+            do { try await Task.sleep(for: .milliseconds(150)) } catch { return }
+            guard !Task.isCancelled else { return }
             self.performSpeak(text)
         }
     }
@@ -55,7 +56,9 @@ final class ATCVoiceService: NSObject, AVSpeechSynthesizerDelegate, @unchecked S
         // Clean up text for speech (expand abbreviations)
         let cleanedText = prepareTextForSpeech(text)
 
+        configureAudioSession()
         let utterance = AVSpeechUtterance(string: cleanedText)
+        currentUtterance = utterance
 
         // Use a voice that sounds more like ATC
         // Prefer "Samantha" (US), "Daniel" (UK), or compact voices for robotic feel
@@ -79,6 +82,10 @@ final class ATCVoiceService: NSObject, AVSpeechSynthesizerDelegate, @unchecked S
     /// Stop speaking immediately
     @MainActor
     func stopSpeaking() {
+        pendingSpeech?.cancel()
+        pendingSpeech = nil
+        currentUtterance = nil
+        onFinishedSpeaking = nil
         synthesizer.stopSpeaking(at: .immediate)
         isSpeaking = false
     }
@@ -315,16 +322,25 @@ final class ATCVoiceService: NSObject, AVSpeechSynthesizerDelegate, @unchecked S
 
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
         Task { @MainActor in
+            guard self.currentUtterance === utterance else { return }
+            self.currentUtterance = nil
             self.isSpeaking = false
             // Play ending radio click
             AudioServicesPlaySystemSound(1104)
-            self.onFinishedSpeaking?()
+            let completion = self.onFinishedSpeaking
+            self.onFinishedSpeaking = nil
+            completion?()
         }
     }
 
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
         Task { @MainActor in
+            guard self.currentUtterance === utterance else { return }
+            self.currentUtterance = nil
             self.isSpeaking = false
+            let completion = self.onFinishedSpeaking
+            self.onFinishedSpeaking = nil
+            completion?()
         }
     }
 }

@@ -34,7 +34,7 @@ const DEMO_CONVERSATIONS = {
                     "✓ Runway number (27)",
                     "✓ Callsign"
                 ],
-                tip: "FAA requires reading back runway assignments. This prevents wrong-runway takeoffs.",
+                tip: "Include the runway in your clearance readback. Confirm any unclear instruction with the controller.",
                 critical: true
             },
             {
@@ -74,7 +74,7 @@ const DEMO_CONVERSATIONS = {
         exchanges: [
             {
                 pilot: "Metro Ground, Cessna 12345, at the FBO with information Alpha, ready to taxi",
-                atc: "Cessna 12345, Metro Ground, taxi to runway 27 via Alpha, hold short",
+                atc: "Cessna 12345, Metro Ground, runway 27, taxi via Alpha, hold short runway 27",
                 score: 95,
                 feedback: "Great initial call! Including ATIS information is important.",
                 highlights: [
@@ -87,7 +87,7 @@ const DEMO_CONVERSATIONS = {
                 tip: "Always include the current ATIS/AWOS letter on initial contact with ground control."
             },
             {
-                pilot: "Taxi runway 27 via Alpha, hold short, Cessna 12345",
+                pilot: "Runway 27, taxi via Alpha, hold short runway 27, Cessna 12345",
                 atc: "Cessna 345, readback correct",
                 score: 100,
                 feedback: "PERFECT readback! This is safety-critical.",
@@ -97,7 +97,7 @@ const DEMO_CONVERSATIONS = {
                     "✓ Hold short instruction",
                     "✓ Callsign"
                 ],
-                tip: "Reading back hold-short prevents runway incursions - the #1 cause of airport accidents.",
+                tip: "Read back hold-short instructions with the runway and callsign. Confirm unclear instructions before moving.",
                 critical: true
             },
             {
@@ -275,7 +275,7 @@ const HELP_CONTENT = {
                 bestFor: "Realistic practice and proficiency"
             }
         ],
-        note: "Change your difficulty level anytime in Settings ⚙️"
+        note: "Change your difficulty level anytime in Settings. Scores are illustrative and do not establish pilot proficiency."
     },
 
     phraseology_tips: {
@@ -285,11 +285,11 @@ const HELP_CONTENT = {
             "State facility name on initial contact",
             "Read back runway assignments",
             "Read back hold-short instructions",
-            "Be concise and clear (10-15 words ideal)",
+            "Be concise and clear while including required information",
             "Use standard phrases (roger, wilco, affirm)"
         ],
         donts: [
-            "Say 'please' or 'thank you' (wastes frequency time)",
+            "Add unnecessary words that make the transmission unclear",
             "Use 'with you' (just state position)",
             "Say 'we are' (use your callsign)",
             "Be verbose or chatty",
@@ -304,7 +304,7 @@ const HELP_CONTENT = {
             "Hold short instructions",
             "Taxi routes"
         ],
-        note: "FAA Aeronautical Information Manual (AIM) 4-4-7 requires reading back these items to prevent miscommunication."
+        note: "These are illustrative practice prompts. Review current official guidance with a qualified instructor for applicable readback requirements."
     },
 
     scenario_categories: {

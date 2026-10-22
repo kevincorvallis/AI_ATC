@@ -15,6 +15,9 @@ struct TrainingView: View {
                 category: scenario.category
             )
 
+            Text(viewModel.isUsingDemo ? "Scripted demo • AI unavailable" : "Practice simulation • Not for real-world flight")
+                .font(.caption2)
+                .padding(8)
             // Conversation
             ConversationView(messages: viewModel.messages)
 

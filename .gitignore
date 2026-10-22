@@ -70,3 +70,6 @@ __pycache__/
 *.pyc
 .DS_Store
 .vercel
+dist/
+test-results/
+node_modules/

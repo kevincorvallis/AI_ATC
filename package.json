@@ -3,12 +3,14 @@
   "version": "1.0.0",
   "description": "Interactive AI-powered ATC training system for student pilots",
   "scripts": {
-    "dev": "cd frontend && python3 -m http.server 8000",
+    "dev": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/*.test.* && python3 -m unittest discover -s tests -p '*backend*.py'",
     "deploy:backend": "cd backend && ./deploy.sh"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/AI_ATC.git"
+    "url": "https://github.com/kevincorvallis/AI_ATC.git"
   },
   "keywords": [
     "atc",

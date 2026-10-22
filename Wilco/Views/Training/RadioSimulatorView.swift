@@ -26,6 +26,18 @@ struct RadioSimulatorView: View {
                 // Radio unit display
                 radioDisplay
 
+                Text(viewModel.isUsingDemo ? "Scripted demo • AI unavailable" : "Practice simulation • Not for real-world flight")
+                    .font(.caption2)
+                    .foregroundStyle(viewModel.isUsingDemo ? .orange : .secondary)
+                    .padding(.top, 8)
+                if let error = viewModel.errorMessage {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
+
                 Spacer()
 
                 // Transcript (minimal, recent messages only)

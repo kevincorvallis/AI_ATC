@@ -1,6 +1,7 @@
 import Foundation
 import Speech
 
+@MainActor
 @Observable
 final class TrainingViewModel {
     // Session state
@@ -10,6 +11,9 @@ final class TrainingViewModel {
     var isWaitingForResponse: Bool = false
     var transmissionState: TransmissionState = .idle
     var errorMessage: String?
+    var isUsingDemo = false
+    private var sessionID = UUID()
+    private var responseResetTask: Task<Void, Never>?
 
     // Voice input state
     var isListening: Bool = false
@@ -53,6 +57,8 @@ final class TrainingViewModel {
     // MARK: - Session Management
 
     func startSession(with scenario: Scenario) {
+        endSession()
+        isUsingDemo = !networkMonitor.isConnected
         self.scenario = scenario
         self.messages = []
         self.currentInput = ""
@@ -85,6 +91,9 @@ final class TrainingViewModel {
     }
 
     func endSession() {
+        sessionID = UUID()
+        responseResetTask?.cancel()
+        responseResetTask = nil
         scenario = nil
         messages = []
         currentInput = ""
@@ -101,6 +110,7 @@ final class TrainingViewModel {
               let scenario = scenario,
               !isWaitingForResponse else { return }
 
+        let id = sessionID
         // Clear input and update state
         await MainActor.run {
             currentInput = ""
@@ -113,14 +123,12 @@ final class TrainingViewModel {
             }
         }
 
+        let history = buildConversationHistory()
         // Add pilot message
         let pilotMessage = Message(role: .pilot, content: message)
         await MainActor.run {
             messages.append(pilotMessage)
         }
-
-        // Build conversation history for API
-        let history = buildConversationHistory()
 
         // Try API, fall back to demo mode
         if networkMonitor.isConnected {
@@ -130,14 +138,21 @@ final class TrainingViewModel {
                     message: message,
                     history: history
                 )
-                await handleATCResponse(response.atcResponse ?? "Radio temporarily unavailable.")
+                guard !Task.isCancelled, sessionID == id else { return }
+                guard let text = response.atcResponse, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    throw ATCAPIError.invalidResponse
+                }
+                isUsingDemo = false
+                handleATCResponse(text)
             } catch {
+                guard !Task.isCancelled, sessionID == id else { return }
+                isUsingDemo = true
                 // Fall back to demo mode on error
                 let demoResponse = demoModeService.generateResponse(
                     for: message,
                     category: scenario.category
                 )
-                await handleATCResponse(demoResponse)
+                handleATCResponse(demoResponse)
             }
         } else {
             // Offline: use demo mode
@@ -146,8 +161,10 @@ final class TrainingViewModel {
                 category: scenario.category
             )
             // Add small delay to simulate response time
-            try? await Task.sleep(for: .milliseconds(600))
-            await handleATCResponse(demoResponse)
+            do { try await Task.sleep(for: .milliseconds(600)) } catch { return }
+            guard !Task.isCancelled, sessionID == id else { return }
+            isUsingDemo = true
+            handleATCResponse(demoResponse)
         }
     }
 
@@ -169,12 +186,12 @@ final class TrainingViewModel {
         }
 
         // Reset state after delay
-        Task {
-            try? await Task.sleep(for: .seconds(1))
-            await MainActor.run {
-                transmissionState = .idle
-                isWaitingForResponse = false
-            }
+        let id = sessionID
+        responseResetTask = Task {
+            do { try await Task.sleep(for: .seconds(1)) } catch { return }
+            guard !Task.isCancelled, sessionID == id else { return }
+            transmissionState = .idle
+            isWaitingForResponse = false
         }
     }
 

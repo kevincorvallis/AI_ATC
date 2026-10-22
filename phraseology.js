@@ -1,5 +1,5 @@
 // Aviation Phraseology Validation and Analysis Engine
-// Validates pilot transmissions against FAA AIM Chapter 4-2 standards
+// Offers limited practice feedback; not an authoritative assessment of flight safety.
 
 class PhraseologyValidator {
     constructor() {
@@ -23,7 +23,7 @@ class PhraseologyValidator {
             }
         };
 
-        // Critical items that MUST be read back per FAA AIM 4-4-7
+        // Instruction types checked by this practice aid
         this.criticalReadbackItems = [
             'runway',
             'hold short',
@@ -63,6 +63,7 @@ class PhraseologyValidator {
      * Main validation function - analyzes a pilot transmission
      */
     validateTransmission(message, context = {}) {
+        message = typeof message === 'string' ? message.trim() : '';
         const analysis = {
             valid: true,
             score: 100,
@@ -76,6 +77,11 @@ class PhraseologyValidator {
 
         // Detect components
         analysis.detectedElements = this.detectElements(message);
+
+        if (!message) {
+            analysis.criticalIssues.push({ type: 'missing_element', severity: 'critical', message: 'Enter a transmission to practice.' });
+            analysis.score = 0;
+        }
 
         // Check for common errors
         this.checkCommonErrors(message, analysis);
@@ -94,6 +100,13 @@ class PhraseologyValidator {
         // Check for proper callsign usage
         this.validateCallsign(message, analysis, context);
 
+        const hasMeaning = /\b(roger|wilco|affirmative|negative|unable|standby|stand by|mayday|pan pan|emergency|fuel|persons|souls|traffic|squawk|heading|maintain|climb|descend|contact|monitor|taxi|hold|holding|cleared|position|in sight|looking|information|on board)\b/i.test(message) ||
+            analysis.detectedElements.hasRequest || analysis.detectedElements.hasPosition;
+        if (message && !hasMeaning) {
+            analysis.warnings.push({ type: 'unrecognized', severity: 'medium', message: 'No clear request, position report, or acknowledgment was recognized.', suggestion: 'Use a scenario suggestion as a starting point.' });
+            analysis.score -= 20;
+        }
+
         // Calculate final score
         analysis.score = this.calculateScore(analysis);
         analysis.valid = analysis.criticalIssues.length === 0;
@@ -111,13 +124,14 @@ class PhraseologyValidator {
         if (context.lastATCMessage) {
             const atcMsg = context.lastATCMessage.toLowerCase();
             if (atcMsg.includes('cleared') || atcMsg.includes('hold short') ||
-                atcMsg.includes('taxi') || atcMsg.includes('contact')) {
+                atcMsg.includes('taxi') || atcMsg.includes('contact') ||
+                /\b(squawk|heading|maintain|climb|descend|monitor)\b/.test(atcMsg)) {
                 return 'readback';
             }
         }
 
         // Initial contact patterns
-        if (msg.includes('ready') || msg.includes('request') ||
+        if (msg.includes('ready') || (msg.includes('request') && !context.inConversation) ||
             (msg.includes('tower') && !context.inConversation) ||
             (msg.includes('ground') && !context.inConversation) ||
             (msg.includes('center') && !context.inConversation)) {
@@ -157,7 +171,8 @@ class PhraseologyValidator {
 
         // Callsign detection (N-numbers or names with numbers)
         if (/\b[nN]-?\d{1,5}[a-zA-Z]{0,2}\b/.test(message) ||
-            /\b(cessna|skyhawk|piper|cherokee|cirrus|beech|mooney|diamond)\s*\d+/i.test(message)) {
+            /\b(cessna|skyhawk|piper|cherokee|cirrus|beech|mooney|diamond|bonanza|baron)\s*\d+[a-z]{0,2}\b/i.test(message) ||
+            /\b[a-z]-[a-z]{4}\b/i.test(message)) {
             elements.hasCallsign = true;
         }
 
@@ -187,8 +202,7 @@ class PhraseologyValidator {
         }
 
         // Readback detection
-        if (msg.includes('roger') || msg.includes('wilco') ||
-            msg.includes('cleared') || msg.includes('holding')) {
+        if (/\b(roger|wilco|cleared|holding|hold|taxi|squawk|heading|maintain|contact)\b/.test(msg)) {
             elements.hasReadback = true;
         }
 
@@ -226,12 +240,10 @@ class PhraseologyValidator {
         const commType = analysis.communicationType;
         const required = this.requiredElements[commType];
 
-        if (!required) return; // No specific requirements for this type
-
         const elements = analysis.detectedElements;
 
         // Check for callsign (almost always required)
-        if (!elements.hasCallsign && commType !== 'general') {
+        if (!elements.hasCallsign) {
             analysis.criticalIssues.push({
                 type: 'missing_element',
                 severity: 'critical',
@@ -268,71 +280,46 @@ class PhraseologyValidator {
      * Validate readback of critical items
      */
     validateReadback(pilotMessage, atcMessage, analysis) {
-        const atcLower = atcMessage.toLowerCase();
-        const pilotLower = pilotMessage.toLowerCase();
-
-        const criticalItemsInATC = [];
-
-        // Check which critical items ATC mentioned
-        for (const item of this.criticalReadbackItems) {
-            if (atcLower.includes(item)) {
-                criticalItemsInATC.push(item);
+        const normalize = text => text.toLowerCase()
+            .replace(/\bholding short\b/g, 'hold short')
+            .replace(/\b(\d{1,2})\s*(left|center|right)\b/g, (_, n, side) => n + side[0]);
+        const atc = normalize(atcMessage);
+        const pilot = normalize(pilotMessage);
+        const issue = (message, suggestion) => {
+            analysis.criticalIssues.push({ type: 'missing_readback', severity: 'critical', message, suggestion });
+            analysis.score -= 20;
+        };
+        const runwayToken = value => value.replace(/^0(?=\d)/, '').toLowerCase();
+        const runwayPattern = /\brunway\s*(\d{1,2}[lcr]?)\b/g;
+        const expectedRunways = [...atc.matchAll(runwayPattern)].map(match => runwayToken(match[1]));
+        const actualRunways = [...pilot.matchAll(runwayPattern)].map(match => runwayToken(match[1]));
+        for (const runway of new Set(expectedRunways)) {
+            if (!actualRunways.includes(runway)) {
+                issue(`Read back runway ${runway.toUpperCase()} exactly; a callsign number is not a runway readback.`, `Include "runway ${runway.toUpperCase()}" and your callsign.`);
             }
         }
-
-        // Verify pilot read back each critical item
-        for (const item of criticalItemsInATC) {
-            if (item === 'runway') {
-                // Extract runway number from ATC message
-                const runwayMatch = atcMessage.match(/runway\s*(\d{1,2}[LCR]?)/i);
-                if (runwayMatch) {
-                    const runway = runwayMatch[1];
-                    if (!pilotLower.includes(runway.toLowerCase())) {
-                        analysis.criticalIssues.push({
-                            type: 'missing_readback',
-                            severity: 'critical',
-                            message: `CRITICAL: Must read back runway assignment (${runway})`,
-                            suggestion: `Include in readback: "Runway ${runway}, Cessna 12345"`
-                        });
-                        analysis.score -= 25;
-                    }
-                }
+        if (atc.includes('hold short') && !pilot.includes('hold short')) {
+            issue('Read back the hold short instruction.', 'Include "hold short", the runway, and your callsign.');
+        }
+        const clearance = atc.match(/\bcleared\s+(for\s+takeoff|to\s+land|(?:for\s+)?touch\s+and\s+go|(?:for\s+)?the\s+option)\b/);
+        if (clearance) {
+            const expected = clearance[1].replace(/^for\s+/, '');
+            const actual = pilot.match(/\bcleared\s+(for\s+takeoff|to\s+land|(?:for\s+)?touch\s+and\s+go|(?:for\s+)?the\s+option)\b/);
+            if (!actual || actual[1].replace(/^for\s+/, '') !== expected) {
+                issue('Read back the type of clearance exactly.', `Include "cleared ${clearance[1]}" and the assigned runway.`);
             }
-
-            if (item === 'hold short' && !pilotLower.includes('hold short')) {
-                analysis.criticalIssues.push({
-                    type: 'missing_readback',
-                    severity: 'critical',
-                    message: 'CRITICAL: Must read back hold short instructions',
-                    suggestion: 'Read back: "Hold short runway 27, Cessna 12345"'
-                });
-                analysis.score -= 25;
-            }
-
-            if (item === 'cleared' && !pilotLower.includes('cleared') && !pilotLower.includes(item)) {
-                analysis.warnings.push({
-                    type: 'missing_readback',
-                    severity: 'high',
-                    message: 'Should read back clearances',
-                    suggestion: 'Acknowledge: "Cleared to land/takeoff, [Callsign]"'
-                });
-                analysis.score -= 10;
-            }
-
-            if (item === 'squawk') {
-                // Extract squawk code
-                const squawkMatch = atcMessage.match(/squawk\s*(\d{4})/i);
-                if (squawkMatch) {
-                    const code = squawkMatch[1];
-                    if (!pilotMessage.includes(code)) {
-                        analysis.warnings.push({
-                            type: 'missing_readback',
-                            severity: 'high',
-                            message: `Should read back squawk code (${code})`,
-                            suggestion: `"Squawk ${code}, [Callsign]"`
-                        });
-                        analysis.score -= 15;
-                    }
+        }
+        const checks = [
+            { label: 'squawk code', expected: /\bsquawk\s+(\d{4})\b/g, actual: /\b(?:squawk|squawking)\s+(\d{4})\b/g },
+            { label: 'heading', expected: /\bheading\s+(\d{1,3})\b/g, actual: /\bheading\s+(\d{1,3})\b/g },
+            { label: 'altitude', expected: /\b(?:altitude|maintain|climb(?:\s+and\s+maintain|\s+to)?|descend(?:\s+and\s+maintain|\s+to)?)\s+(?:altitude\s+)?(\d{1,2},?\d{3}|\d{3})\b/g, actual: /\b(?:altitude|maintain|maintaining|climb(?:ing)?(?:\s+and\s+maintain|\s+to)?|descend(?:ing)?(?:\s+and\s+maintain|\s+to)?|level)\s+(?:altitude\s+)?(\d{1,2},?\d{3}|\d{3})\b/g },
+            { label: 'frequency', expected: /\b(?:contact|monitor|frequency)\b[^.!?]*?\b(1[12]\d\.\d{1,3})\b/g, actual: /\b(1[12]\d\.\d{1,3})\b/g }
+        ];
+        for (const check of checks) {
+            const values = [...pilot.matchAll(check.actual)].map(match => Number(match[1].replace(',', '')));
+            for (const match of atc.matchAll(check.expected)) {
+                if (!values.includes(Number(match[1].replace(',', '')))) {
+                    issue(`Read back the assigned ${check.label} (${match[1]}) exactly.`, `Include the ${check.label} and your callsign.`);
                 }
             }
         }
@@ -359,7 +346,7 @@ class PhraseologyValidator {
         const msgLower = message.toLowerCase();
 
         excessiveWords.forEach(word => {
-            if (msgLower.includes(word)) {
+            if (new RegExp(`\\b${word}\\b`).test(msgLower)) {
                 analysis.feedback.push({
                     type: 'brevity',
                     severity: 'low',

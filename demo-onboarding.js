@@ -12,9 +12,8 @@ class WelcomeFlow {
 
     show() {
         // Don't show if user has already seen it
-        if (localStorage.getItem('atc_welcome_completed')) {
-            return;
-        }
+        try { if (localStorage.getItem('atc_welcome_completed')) return; } catch { /* Storage is optional. */ }
+        if (this.modal) return;
 
         this.createModal();
         this.showStep(1);
@@ -45,6 +44,7 @@ class WelcomeFlow {
         `;
 
         document.body.appendChild(this.modal);
+        this.releaseDialog = window.activateDialog(this.modal, 'Welcome', () => this.skip());
 
         // Event listeners
         document.getElementById('welcomeClose').addEventListener('click', () => this.skip());
@@ -83,7 +83,7 @@ class WelcomeFlow {
     getStep1HTML() {
         return `
             <h2>Welcome to ATC Training! 👋</h2>
-            <p class="step-desc">Practice real air traffic control communications with AI-powered simulations.</p>
+            <p class="step-desc">Explore aviation radio communications with an offline scripted demo. Illustrative feedback is not flight instruction or an operational clearance.</p>
 
             <div class="feature-list">
                 <div class="feature-item">
@@ -238,11 +238,13 @@ class WelcomeFlow {
             window.feedbackEngine.setDifficulty(difficulty);
         }
 
-        // Mark as completed
-        localStorage.setItem('atc_welcome_completed', 'true');
+        // Progress remains optional when browser storage is unavailable.
+        try { localStorage.setItem('atc_welcome_completed', 'true'); } catch { /* Continue without persistence. */ }
 
         // Remove modal
         if (this.modal) {
+            this.releaseDialog?.();
+            this.releaseDialog = null;
             this.modal.remove();
             this.modal = null;
         }
@@ -259,11 +261,14 @@ class DemoPlayer {
     }
 
     showSelector() {
+        this.stopAutoPlay();
         this.createSelectorModal();
     }
 
     createSelectorModal() {
         if (this.modal) {
+            this.releaseDialog?.();
+            this.releaseDialog = null;
             this.modal.remove();
         }
 
@@ -283,6 +288,7 @@ class DemoPlayer {
         `;
 
         document.body.appendChild(this.modal);
+        this.releaseDialog = window.activateDialog(this.modal, 'Interactive demos', () => this.close());
 
         // Event listeners
         document.getElementById('demoClose').addEventListener('click', () => this.close());
@@ -298,17 +304,19 @@ class DemoPlayer {
 
     getDemoCardsHTML() {
         return Object.entries(DEMO_CONVERSATIONS).map(([key, demo]) => `
-            <div class="demo-card" id="demoCard_${key}">
+            <button type="button" class="demo-card" id="demoCard_${key}">
                 <div class="demo-card-icon">${demo.icon}</div>
                 <h3>${demo.title}</h3>
                 <p>${demo.description}</p>
                 <span class="demo-difficulty ${demo.difficulty.toLowerCase()}">${demo.difficulty}</span>
                 <span class="demo-duration">${demo.exchanges.length} exchanges</span>
-            </div>
+            </button>
         `).join('');
     }
 
     playDemo(demoKey) {
+        if (!Object.hasOwn(DEMO_CONVERSATIONS, demoKey)) return;
+        this.stopAutoPlay();
         this.currentDemo = DEMO_CONVERSATIONS[demoKey];
         this.currentExchange = 0;
         this.showDemoPlayer();
@@ -318,6 +326,8 @@ class DemoPlayer {
         if (!this.currentDemo) return;
 
         if (this.modal) {
+            this.releaseDialog?.();
+            this.releaseDialog = null;
             this.modal.remove();
         }
 
@@ -354,6 +364,7 @@ class DemoPlayer {
         `;
 
         document.body.appendChild(this.modal);
+        this.releaseDialog = window.activateDialog(this.modal, this.currentDemo.title, () => this.close());
 
         // Event listeners
         document.getElementById('demoPlayerClose').addEventListener('click', () => this.close());
@@ -463,13 +474,7 @@ class DemoPlayer {
         if (this.currentExchange < this.currentDemo.exchanges.length - 1) {
             this.showExchange(this.currentExchange + 1);
         } else {
-            // On last exchange, "Finish" button shows try scenario or goes back to selector
-            const tryBtn = document.getElementById('demoTryScenario');
-            if (tryBtn && tryBtn.style.display !== 'none') {
-                // Button is visible, let them click it
-            } else {
-                this.showSelector();
-            }
+            this.showSelector();
         }
     }
 
@@ -493,6 +498,7 @@ class DemoPlayer {
     }
 
     startAutoPlay() {
+        clearInterval(this.autoPlayInterval);
         this.autoPlayInterval = setInterval(() => {
             if (this.currentExchange < this.currentDemo.exchanges.length - 1) {
                 this.nextExchange();
@@ -513,12 +519,13 @@ class DemoPlayer {
     }
 
     tryScenario() {
-        // Close demo and launch the actual scenario
+        // Capture the selection before closing clears the player state.
+        const demo = this.currentDemo;
         this.close();
 
-        if (window.atcApp && this.currentDemo) {
-            const category = this.currentDemo.category;
-            const scenarioId = this.currentDemo.scenarioId;
+        if (window.atcApp && demo) {
+            const category = demo.category;
+            const scenarioId = demo.scenarioId;
 
             // Find the scenario in TRAINING_SCENARIOS
             const categoryData = TRAINING_SCENARIOS[category];
@@ -534,6 +541,8 @@ class DemoPlayer {
     close() {
         this.stopAutoPlay();
         if (this.modal) {
+            this.releaseDialog?.();
+            this.releaseDialog = null;
             this.modal.remove();
             this.modal = null;
         }
@@ -555,6 +564,8 @@ class HelpGuide {
 
     createModal() {
         if (this.modal) {
+            this.releaseDialog?.();
+            this.releaseDialog = null;
             this.modal.remove();
         }
 
@@ -577,6 +588,7 @@ class HelpGuide {
         `;
 
         document.body.appendChild(this.modal);
+        this.releaseDialog = window.activateDialog(this.modal, 'Help and guide', () => this.close());
 
         // Event listeners
         document.getElementById('helpClose').addEventListener('click', () => this.close());
@@ -665,7 +677,7 @@ class HelpGuide {
                 </div>
             </div>
             <div class="readback-section">
-                <h4>📋 Must Read Back (FAA AIM 4-4-7):</h4>
+                <h4>📋 Readback practice items:</h4>
                 <ul class="readback-list">
                     ${content.readbacks.map(item => `<li>${item}</li>`).join('')}
                 </ul>
@@ -695,6 +707,8 @@ class HelpGuide {
 
     close() {
         if (this.modal) {
+            this.releaseDialog?.();
+            this.releaseDialog = null;
             this.modal.remove();
             this.modal = null;
         }
@@ -709,23 +723,11 @@ document.addEventListener('DOMContentLoaded', () => {
     welcomeFlow = new WelcomeFlow();
     demoPlayer = new DemoPlayer();
     helpGuide = new HelpGuide();
+    window.welcomeFlow = welcomeFlow;
+    window.demoPlayer = demoPlayer;
+    window.helpGuide = helpGuide;
 
-    // Show welcome for first-time users (with small delay to let page load)
-    setTimeout(() => {
-        welcomeFlow.show();
+    // The guided departure is the first-run entry point. Keep the older welcome
+    // tour available to callers without interrupting the lesson landing page.
 
-        // Add demo launch listener if button exists in welcome
-        const launchDemoBtn = document.getElementById('launchDemoFromWelcome');
-        if (launchDemoBtn) {
-            launchDemoBtn.addEventListener('click', () => {
-                welcomeFlow.complete();
-                demoPlayer.playDemo('pattern_work_demo');
-            });
-        }
-    }, 500);
 });
-
-// Export for global access
-window.welcomeFlow = welcomeFlow;
-window.demoPlayer = demoPlayer;
-window.helpGuide = helpGuide;

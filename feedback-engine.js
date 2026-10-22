@@ -55,7 +55,7 @@ class FeedbackEngine {
             analysis: phraseologyAnalysis,
             feedback: feedback,
             sessionAverage: this.getSessionAverage(),
-            showFeedback: this.shouldShowFeedback()
+            showFeedback: this.shouldShowFeedback(phraseologyAnalysis)
         };
     }
 
@@ -140,9 +140,7 @@ class FeedbackEngine {
         } else if (this.difficulty === 'advanced') {
             // Minimal feedback - only critical safety issues
             if (analysis.criticalIssues?.length > 0) {
-                const criticalSafety = analysis.criticalIssues.filter(
-                    issue => issue.type === 'missing_readback'
-                );
+                const criticalSafety = analysis.criticalIssues;
                 if (criticalSafety.length > 0) {
                     messages.push({
                         type: 'critical',
@@ -168,7 +166,9 @@ class FeedbackEngine {
     /**
      * Determine if feedback should be shown based on difficulty
      */
-    shouldShowFeedback() {
+    shouldShowFeedback(analysis = {}) {
+        // Important corrections must remain visible at every difficulty.
+        if (analysis.criticalIssues?.length || analysis.warnings?.some(item => item.severity === 'high')) return true;
         // Beginners get feedback every transmission
         if (this.difficulty === 'beginner') return true;
 
@@ -232,10 +232,16 @@ class FeedbackEngine {
 
                 msg.items.forEach(item => {
                     const li = document.createElement('li');
-                    li.innerHTML = `
-                        <span class="feedback-message">${item.message}</span>
-                        ${item.suggestion ? `<span class="feedback-suggestion">${item.suggestion}</span>` : ''}
-                    `;
+                    const message = document.createElement('span');
+                    message.className = 'feedback-message';
+                    message.textContent = item.message;
+                    li.appendChild(message);
+                    if (item.suggestion) {
+                        const suggestion = document.createElement('span');
+                        suggestion.className = 'feedback-suggestion';
+                        suggestion.textContent = item.suggestion;
+                        li.appendChild(suggestion);
+                    }
                     list.appendChild(li);
                 });
 

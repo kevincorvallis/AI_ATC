@@ -1,2 +1,1 @@
-openai==1.54.0
-boto3==1.35.0
+# The Lambda uses only the Python standard library. No install step is required.

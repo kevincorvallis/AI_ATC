@@ -34,24 +34,24 @@ class AviationVisualInterface {
         visualPanel.className = 'aviation-visual-panel';
         visualPanel.innerHTML = `
             <div class="visual-header">
-                <h3>Situational Awareness</h3>
+                <h3>Illustrative Practice Diagram</h3>
                 <button class="toggle-visual" id="toggleVisual">Hide</button>
             </div>
             <div class="visual-content">
                 <!-- Airport Diagram Canvas -->
                 <div class="airport-diagram-container">
-                    <canvas id="airportDiagram" width="400" height="300"></canvas>
+                    <canvas id="airportDiagram" width="400" height="300" role="img" aria-label="Illustrative airport diagram showing runway 27 and its reciprocal runway end 09. Not a navigation chart."></canvas>
                     <div class="diagram-legend">
-                        <span class="legend-item"><span class="legend-color" style="background: #4CAF50;"></span> Your Position</span>
+                        <span class="legend-item"><span class="legend-color" style="background: #4CAF50;"></span> Practice Phase</span>
                         <span class="legend-item"><span class="legend-color" style="background: #ff9800;"></span> Active Runway</span>
                         <span class="legend-item"><span class="legend-color" style="background: #2196F3;"></span> Taxiways</span>
                     </div>
                 </div>
 
-                <!-- Flight Progress Indicator -->
+                <!-- Scenario Progress Indicator -->
                 <div class="flight-progress-container">
                     <div class="progress-header">
-                        <span class="progress-label">Flight Progress</span>
+                        <span class="progress-label">Scenario Progress</span>
                         <span class="progress-percentage" id="progressPercentage">0%</span>
                     </div>
                     <div class="progress-bar">
@@ -109,7 +109,7 @@ class AviationVisualInterface {
      * Load visuals for a specific scenario
      */
     loadScenarioVisuals(scenario) {
-        const scenarioData = scenario;
+        this.aircraftPosition = null;
 
         // Set default airport (Metro Airport for pattern work)
         this.currentAirport = {
@@ -126,7 +126,17 @@ class AviationVisualInterface {
 
         this.activeRunway = this.currentAirport.runways[0];
         this.drawAirportDiagram();
-        this.updateWind(270, 8);
+        const wind = scenario?.conditions?.match(/wind\s+(\d{3})\s+at\s+(\d+)/i);
+        if (wind) {
+            this.updateWind(Number(wind[1]), Number(wind[2]));
+        } else {
+            const canvas = document.getElementById('windrose');
+            canvas?.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
+            const windText = document.getElementById('windText');
+            if (windText) windText.textContent = 'See scenario conditions';
+        }
+        const nextAction = document.getElementById('nextAction');
+        if (nextAction) nextAction.textContent = 'Begin scenario';
     }
 
     /**
@@ -148,7 +158,7 @@ class AviationVisualInterface {
 
         // Draw runways
         if (this.currentAirport?.runways) {
-            this.currentAirport.runways.forEach(runway => {
+            this.currentAirport.runways.slice(0, 1).forEach(runway => {
                 const isActive = runway.number === this.activeRunway?.number;
 
                 ctx.fillStyle = isActive ? '#ff9800' : '#666';
@@ -179,6 +189,8 @@ class AviationVisualInterface {
                 ctx.font = 'bold 20px Arial';
                 ctx.textAlign = 'center';
                 ctx.fillText(runway.number, width / 2, y + 30);
+                const reciprocal = this.currentAirport.runways[1]?.number;
+                if (reciprocal) ctx.fillText(reciprocal, width / 2, y + runwayHeight - 12);
             });
         }
 
@@ -262,8 +274,14 @@ class AviationVisualInterface {
         const position = positions[phase];
         if (position) {
             this.aircraftPosition = position;
-            document.getElementById('aircraftPosition').textContent = position.text;
+            const positionLabel = document.getElementById('aircraftPosition');
+            if (positionLabel) positionLabel.textContent = position.text;
             this.drawAirportDiagram(); // Redraw with new position
+        } else {
+            this.aircraftPosition = null;
+            const positionLabel = document.getElementById('aircraftPosition');
+            if (positionLabel) positionLabel.textContent = phase === 'complete' ? 'Practice Complete' : 'See scenario instructions';
+            this.drawAirportDiagram();
         }
     }
 
@@ -363,8 +381,8 @@ class AviationVisualInterface {
      */
     updateNextAction(hint) {
         const nextActionEl = document.getElementById('nextAction');
-        if (nextActionEl && hint) {
-            nextActionEl.textContent = hint.shouldDo || 'Continue';
+        if (nextActionEl) {
+            nextActionEl.textContent = hint?.shouldDo || 'Follow the latest practice instruction';
         }
     }
 

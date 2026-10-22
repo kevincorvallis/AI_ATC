@@ -50,7 +50,7 @@
 }
 
 body {
-    font-family: 'Rajdhani', sans-serif;
+    font-family: 'Rajdhani', 'Avenir Next', 'Segoe UI', sans-serif;
     background: var(--bg);
     background-image:
         radial-gradient(circle at 20% 50%, rgba(0, 180, 216, 0.08) 0%, transparent 50%),
@@ -1640,4 +1640,89 @@ footer {
     .score-value {
         font-size: 2rem;
     }
+}
+
+/* Keyboard access and compact screens. */
+button, input, select { font: inherit; }
+button { color: inherit; }
+.category-card, .scenario-card { width: 100%; text-align: left; color: var(--text); }
+button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible {
+    outline: 3px solid var(--warning);
+    outline-offset: 4px;
+}
+button:disabled { cursor: wait; opacity: 0.65; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+.skip-link { position: fixed; top: -100px; left: 16px; z-index: 20000; padding: 12px; background: var(--bg-light); color: var(--text); }
+.skip-link:not(:focus) { width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
+.skip-link:focus { top: 12px; }
+.mode-label { color: var(--success); font-size: 0.95rem; font-weight: 600; margin-top: 12px; }
+.training-notice { max-width: 680px; margin: 12px auto 0; color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; }
+.message { overflow-wrap: anywhere; }
+.nav-bar { gap: 8px; flex-wrap: wrap; }
+.nav-right { margin-left: auto; }
+@media (max-width: 480px) {
+    .nav-bar { padding: 10px; }
+    .nav-right { gap: 6px; }
+    .nav-btn { padding: 8px 10px; }
+    .text-input-container { flex-wrap: wrap; }
+    .pilot-input { min-width: 0; width: 100%; }
+    .transmit-button { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+/* The guided lesson starts from a compact practice briefing. */
+.lesson-home-card {
+    color: #152735;
+    background: #e7eef4;
+    border-radius: 12px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(180px, 1fr);
+    gap: 32px;
+    text-align: left;
+    padding: 32px;
+    margin: 0 0 48px;
+}
+.category-selection .lesson-home-card h2 {
+    color: #152735;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-weight: 500;
+    font-size: clamp(1.7rem, 5vw, 2.35rem);
+    line-height: 1.12;
+    text-align: left;
+    margin: 10px 0 18px;
+}
+.category-selection .lesson-home-card h2::after { display: none; }
+.lesson-home-copy > p { margin: 0 0 14px; line-height: 1.55; }
+.lesson-home-duration { color: #41596d; font-size: .88rem; }
+.lesson-home-start {
+    color: #fff;
+    background: #126b70;
+    border: 0;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 14px 20px;
+    min-height: 48px;
+    cursor: pointer;
+    margin-top: 5px;
+}
+.lesson-home-start:hover { background: #0d5357; }
+.lesson-home-start:focus-visible { outline: 3px solid #23485f; outline-offset: 4px; }
+.lesson-home-copy .lesson-home-recent { color: #41596d; font-size: .9rem; margin: 14px 0 0; }
+.lesson-home-recent:empty { display: none; }
+.lesson-home-route { list-style: none; padding: 0 0 0 24px; border-left: 2px solid #b2c6d4; margin: 0; align-self: center; }
+.lesson-home-route li { margin: 0 0 20px; position: relative; }
+.lesson-home-route li:last-child { margin-bottom: 0; }
+.lesson-home-route li::before { content: ''; position: absolute; top: 10px; left: -30px; width: 10px; height: 10px; border-radius: 50%; background: #23485f; }
+.lesson-home-route strong { display: block; color: #23485f; }
+.lesson-home-route span { display: block; color: #41596d; font-size: .9rem; line-height: 1.45; margin-top: 3px; }
+body.departure-active .container > header,
+body.departure-active .container > .nav-bar { display: none; }
+@media (max-width: 600px) {
+    .lesson-home-card { grid-template-columns: minmax(0, 1fr); padding: 24px 20px; gap: 26px; }
+    .lesson-home-route { margin-left: 5px; }
+    .lesson-home-start { width: 100%; }
 }

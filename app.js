@@ -121,6 +121,10 @@ class ATCTrainingApp {
         this.conversationHistory = [];
         this.isWaitingForResponse = false;
         this.lastATCMessage = null;
+        this.sessionId = 0;
+        this.requestController = null;
+        this.demoTimer = null;
+        this.signalTimer = null;
 
         // Aviation enhancement modules - will be assigned when ready
         this.stateMachine = null;
@@ -131,7 +135,8 @@ class ATCTrainingApp {
         this.views = {
             categories: document.getElementById('categorySelection'),
             scenarios: document.getElementById('scenarioSelection'),
-            training: document.getElementById('trainingInterface')
+            training: document.getElementById('trainingInterface'),
+            departure: document.getElementById('departureLesson')
         };
 
         this.initEventListeners();
@@ -141,30 +146,55 @@ class ATCTrainingApp {
     }
 
     initModules() {
-        // Wait for all modules to be available
-        const checkModules = () => {
-            this.stateMachine = window.scenarioStateMachine;
-            this.feedbackEngine = window.feedbackEngine;
-            this.aviationVisual = window.aviationVisual;
-            this.phraseologyValidator = window.phraseologyValidator;
+        this.stateMachine = window.scenarioStateMachine;
+        this.feedbackEngine = window.feedbackEngine;
+        this.aviationVisual = window.aviationVisual;
+        this.phraseologyValidator = window.phraseologyValidator;
+        this.applyDifficulty();
+        const modeLabel = document.getElementById('modeLabel');
+        if (modeLabel) modeLabel.textContent = this.isLiveMode() ? 'Live AI training' : 'Scripted practice · no account required';
+    }
 
-            if (!this.stateMachine || !this.feedbackEngine ||
-                !this.aviationVisual || !this.phraseologyValidator) {
-                // Retry after a short delay
-                setTimeout(checkModules, 50);
-            } else {
-                console.log('All modules loaded successfully');
-            }
-        };
-        checkModules();
+    isLiveMode() {
+        return typeof ATC_CONFIG !== 'undefined' && ATC_CONFIG.mode === 'live' &&
+            /^https:\/\//.test(ATC_CONFIG.apiEndpoint || '');
+    }
+
+    cancelPendingResponse() {
+        this.sessionId += 1;
+        this.requestController?.abort();
+        this.requestController = null;
+        clearTimeout(this.demoTimer);
+        clearTimeout(this.signalTimer);
+        this.setWaiting(false);
+        document.getElementById('signalIndicator')?.classList.remove('transmitting', 'receiving');
+    }
+
+    setWaiting(waiting) {
+        this.isWaitingForResponse = waiting;
+        const button = document.getElementById('transmitButton');
+        if (button) button.disabled = waiting;
+        document.getElementById('conversation')?.setAttribute('aria-busy', String(waiting));
+    }
+
+    applyDifficulty() {
+        const difficulty = window.appCore?.settings.get('difficulty') || 'beginner';
+        this.feedbackEngine?.setDifficulty(difficulty);
     }
 
     // Navigation
     showView(viewName) {
+        if (this.currentView === 'departure' && viewName !== 'departure') window.WilcoDeparture?.stop();
         Object.entries(this.views).forEach(([name, el]) => {
             if (el) el.style.display = name === viewName ? 'block' : 'none';
         });
+        if (this.currentView === 'training' && viewName !== 'training') this.cancelPendingResponse();
         this.currentView = viewName;
+        document.body.classList.toggle('departure-active', viewName === 'departure');
+        const skipLink = document.querySelector('.skip-link');
+        if (skipLink && this.views[viewName]) skipLink.href = '#' + this.views[viewName].id;
+        const heading = this.views[viewName]?.querySelector('h2');
+        if (heading) { heading.tabIndex = -1; heading.focus(); }
 
         const backBtn = document.getElementById('backButton');
         if (backBtn) {
@@ -173,8 +203,10 @@ class ATCTrainingApp {
     }
 
     goBack() {
-        if (this.currentView === 'training') {
-            this.showView('scenarios');
+        if (this.currentView === 'departure') {
+            this.showView('categories');
+        } else if (this.currentView === 'training') {
+            this.showScenarios(this.currentCategory);
         } else if (this.currentView === 'scenarios') {
             this.showView('categories');
             this.currentCategory = null;
@@ -182,6 +214,7 @@ class ATCTrainingApp {
     }
 
     initEventListeners() {
+        document.getElementById('startDepartureLesson')?.addEventListener('click', () => window.WilcoDeparture?.start());
         // Back button
         document.getElementById('backButton')?.addEventListener('click', () => this.goBack());
 
@@ -214,6 +247,7 @@ class ATCTrainingApp {
         const demoBtn = document.getElementById('demoButton');
         if (demoBtn) {
             demoBtn.addEventListener('click', () => {
+                demoBtn.focus();
                 if (window.demoPlayer) {
                     window.demoPlayer.showSelector();
                 }
@@ -224,6 +258,7 @@ class ATCTrainingApp {
         const helpBtn = document.getElementById('helpButton');
         if (helpBtn) {
             helpBtn.addEventListener('click', () => {
+                helpBtn.focus();
                 if (window.helpGuide) {
                     window.helpGuide.show();
                 }
@@ -239,6 +274,7 @@ class ATCTrainingApp {
         const text = input?.value.trim();
 
         if (!text || !this.currentScenario || this.isWaitingForResponse) return;
+        if (text.length > 1000) { this.updateStatus('Please keep transmissions under 1,000 characters.'); return; }
 
         input.value = '';
         this.handlePilotTransmission(text);
@@ -282,7 +318,8 @@ class ATCTrainingApp {
         container.innerHTML = '';
 
         categoryData.scenarios.forEach(scenario => {
-            const card = document.createElement('div');
+            const card = document.createElement('button');
+            card.type = 'button';
             card.className = 'scenario-card';
             card.innerHTML = `
                 <h3>${scenario.icon} ${scenario.name}</h3>
@@ -297,6 +334,9 @@ class ATCTrainingApp {
     }
 
     startScenario(category, scenario) {
+        this.cancelPendingResponse();
+        this.currentCategory = category;
+        this.difficultyPromptShown = false;
         this.currentScenario = category;
         this.currentScenarioId = scenario.id;
         this.conversationHistory = [];
@@ -346,10 +386,10 @@ class ATCTrainingApp {
             }
         }
 
-        // Focus input
-        document.getElementById('pilotInput')?.focus();
-
+        this.applyDifficulty();
         this.showView('training');
+        document.getElementById('pilotInput').value = '';
+        document.getElementById('pilotInput')?.focus();
         this.updateStatus('Ready');
 
         if (window.appCore) {
@@ -358,7 +398,9 @@ class ATCTrainingApp {
     }
 
     handlePilotTransmission(transcript) {
-        this.isWaitingForResponse = true;
+        if (this.isWaitingForResponse || this.currentView !== 'training' || typeof transcript !== 'string' ||
+            !transcript.trim() || transcript.length > 1000) return;
+        this.setWaiting(true);
         this.addMessage('pilot', transcript);
         this.conversationHistory.push({ role: 'user', content: transcript });
         this.updateStatus('Waiting for ATC...');
@@ -373,93 +415,94 @@ class ATCTrainingApp {
     }
 
     async sendToATC(message) {
+        const sessionId = this.sessionId;
+        if (!this.isLiveMode()) {
+            this.handleDemoMode(message, sessionId);
+            return;
+        }
+        const controller = new AbortController();
+        this.requestController = controller;
+        const timeoutId = setTimeout(() => controller.abort(), ATC_CONFIG.requestTimeoutMs || 15000);
         try {
-            if (!API_ENDPOINT || API_ENDPOINT === 'YOUR_API_ENDPOINT_HERE/atc') {
-                console.warn('API endpoint not configured, using demo mode');
-                this.addMessage('system', '⚠️ Demo mode: API not configured');
-                this.handleDemoMode(message);
-                return;
-            }
-
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-            const response = await fetch(API_ENDPOINT, {
+            const response = await fetch(ATC_CONFIG.apiEndpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     scenario: this.currentScenario,
-                    message: message,
-                    history: this.conversationHistory.slice(-20)
+                    message,
+                    history: this.conversationHistory.slice(0, -1).slice(-20)
                 }),
                 signal: controller.signal
             });
-
-            clearTimeout(timeoutId);
-
-            if (!response.ok) {
-                console.error(`API error: ${response.status} ${response.statusText}`);
-                this.addMessage('system', `⚠️ API error (${response.status}), switching to demo mode`);
-                this.handleDemoMode(message);
-                return;
-            }
-
+            if (!response.ok) throw new Error('The live service is unavailable.');
             const data = await response.json();
-            if (data.success) {
-                this.conversationHistory.push({ role: 'assistant', content: data.atc_response });
-                this.handleATCResponse(data.atc_response);
-            } else {
-                console.error('API returned success:false:', data.error);
-                this.addMessage('system', `⚠️ ${data.error || 'API error'}, switching to demo mode`);
-                this.handleDemoMode(message);
+            if (!data.success || typeof data.atc_response !== 'string' || !data.atc_response.trim() || data.atc_response.length > 10000) {
+                throw new Error('The live service returned an invalid response.');
             }
+            if (sessionId !== this.sessionId) return;
+            this.conversationHistory.push({ role: 'assistant', content: data.atc_response });
+            this.handleATCResponse(data.atc_response);
         } catch (error) {
-            const errorMsg = error.name === 'AbortError' ?
-                'Request timeout (15s)' :
-                `Network error: ${error.message}`;
-            console.error('API call failed:', errorMsg);
-            this.addMessage('system', `⚠️ ${errorMsg}, switching to demo mode`);
-            this.handleDemoMode(message);
+            if (sessionId !== this.sessionId) return;
+            this.addMessage('system', 'Live AI is unavailable. This response uses the offline scripted demo.');
+            this.handleDemoMode(message, sessionId);
+        } finally {
+            clearTimeout(timeoutId);
+            if (this.requestController === controller) this.requestController = null;
         }
     }
 
-    handleDemoMode(pilotMessage) {
+    handleDemoMode(pilotMessage, sessionId = this.sessionId) {
+        const response = this.getDemoResponse(pilotMessage);
+        this.demoTimer = setTimeout(() => {
+            if (sessionId !== this.sessionId) return;
+            this.conversationHistory.push({ role: 'assistant', content: response });
+            this.handleATCResponse(response);
+        }, 450);
+    }
+
+    getDemoResponse(pilotMessage) {
         const msg = pilotMessage.toLowerCase();
-        let callsign = 'Cessna 12345';
-        const match = pilotMessage.match(/([A-Z]-?[A-Z]{4}|N\d{3,5}[A-Z]?|[A-Za-z]+\s*\d{2,5})/i);
-        if (match) callsign = match[1].toUpperCase();
-
-        let response = '';
-
-        if (msg.includes('ready for departure') || msg.includes('ready for takeoff')) {
-            response = `${callsign}, runway 27, cleared for takeoff, wind 270 at 8.`;
-        } else if (msg.includes('downwind')) {
-            response = `${callsign}, roger, report base.`;
-        } else if (msg.includes('base') || msg.includes('final')) {
-            response = `${callsign}, cleared to land runway 27.`;
-        } else if (msg.includes('taxi')) {
-            response = `${callsign}, taxi to runway 27 via Alpha, hold short.`;
-        } else if (msg.includes('flight following')) {
-            response = `${callsign}, squawk 4521, radar contact, proceed on course.`;
-        } else if (msg.includes('mayday') || msg.includes('emergency')) {
-            response = `${callsign}, roger mayday, say souls and fuel. Emergency equipment standing by.`;
-        } else {
-            const defaults = {
-                pattern_work: `${callsign}, roger, continue.`,
-                ground_operations: `${callsign}, hold position.`,
-                flight_following: `${callsign}, radar contact.`,
-                emergency: `${callsign}, say intentions.`
-            };
-            response = defaults[this.currentScenario] || `${callsign}, roger.`;
+        const match = pilotMessage.match(/\b(?:N[0-9]{1,5}[A-Z]{0,2}|(?:Cessna|Piper|Skyhawk|Cirrus|Bonanza)\s+[0-9]{2,5}[A-Z]{0,2})\b/i);
+        const callsign = match ? match[0] : 'Cessna 12345';
+        // These are illustrative responses, never operational clearances.
+        if (/mayday|emergency|engine failure|engine rough/.test(msg)) {
+            return `${callsign}, roger, say position, persons on board, fuel remaining, and intentions.`;
         }
-
-        this.conversationHistory.push({ role: 'assistant', content: response });
-
-        setTimeout(() => this.handleATCResponse(response), 600);
+        if (this.currentScenario === 'emergency') {
+            if (/souls|persons|fuel|ambulance/.test(msg)) return `${callsign}, roger, assistance requested. Say your intentions.`;
+            if (/radio check/.test(msg)) return `${callsign}, Metro Tower, loud and clear.`;
+            return `${callsign}, roger, say position and intentions.`;
+        }
+        if (this.currentScenario === 'ground_operations') {
+            if (/clear of|runway 27 clear/.test(msg)) return `${callsign}, taxi to parking via Alpha.`;
+            if (/holding short/.test(msg)) return this.currentScenarioId === 'ground_runway_crossing'
+                ? `${callsign}, cross runway 27 at Alpha, report clear.`
+                : `${callsign}, contact Tower 118.3.`;
+            if (/hold short|holding position|crossing/.test(msg)) return `${callsign}, roger.`;
+            if (/taxi/.test(msg)) return `${callsign}, runway 27, taxi via Alpha, hold short runway 27.`;
+            return `${callsign}, hold position, say your request.`;
+        }
+        if (this.currentScenario === 'flight_following') {
+            if (/flight following|initial request/.test(msg)) return `${callsign}, squawk 4521, say position, altitude, and destination.`;
+            if (/squawk/.test(msg)) return `${callsign}, radar contact, proceed on course.`;
+            if (/traffic in sight/.test(msg)) return `${callsign}, roger, traffic no factor.`;
+            if (/looking|negative contact/.test(msg)) return `${callsign}, roger, advise when traffic in sight.`;
+            if (/frequency|contact seattle/.test(msg)) return `${callsign}, contact Seattle Center 124.5.`;
+            if (/class bravo/.test(msg)) return `${callsign}, remain outside Class Bravo, standby.`;
+            return `${callsign}, roger, report any changes to your request.`;
+        }
+        if (/going around/.test(msg)) return `${callsign}, roger, make left traffic runway 27.`;
+        if (/cleared/.test(msg)) return `${callsign}, roger, report left downwind.`;
+        if (/ready for departure|ready for takeoff/.test(msg)) return `${callsign}, runway 27, cleared for takeoff.`;
+        if (/downwind/.test(msg)) return `${callsign}, roger, report base.`;
+        if (/base|final/.test(msg)) return `${callsign}, runway 27, cleared ${/touch and go/.test(msg) ? 'touch and go' : 'to land'}.`;
+        return `${callsign}, say your position and request.`;
     }
 
     handleATCResponse(response) {
-        this.isWaitingForResponse = false;
+        this.setWaiting(false);
+        const previousATCMessage = this.lastATCMessage;
         this.lastATCMessage = response;
         document.getElementById('signalIndicator')?.classList.remove('transmitting');
         document.getElementById('signalIndicator')?.classList.add('receiving');
@@ -489,7 +532,7 @@ class ATCTrainingApp {
             const scenarioState = this.stateMachine?.getCurrentState();
             const feedbackData = this.feedbackEngine.processFeedback(
                 lastPilotMessage,
-                this.lastATCMessage,
+                previousATCMessage,
                 scenarioState
             );
 
@@ -503,9 +546,10 @@ class ATCTrainingApp {
             }
         }
 
+        this.conversationHistory = this.conversationHistory.slice(-100);
         this.updateStatus('Ready');
 
-        setTimeout(() => {
+        this.signalTimer = setTimeout(() => {
             document.getElementById('signalIndicator')?.classList.remove('receiving');
         }, 1000);
     }
@@ -523,6 +567,7 @@ class ATCTrainingApp {
         div.appendChild(document.createTextNode(text));
 
         conversation.appendChild(div);
+        while (conversation.children.length > 100) conversation.firstElementChild.remove();
         conversation.scrollTop = conversation.scrollHeight;
     }
 
@@ -535,29 +580,39 @@ class ATCTrainingApp {
         const modal = document.getElementById('settingsModal');
         const overlay = document.getElementById('settingsOverlay');
 
-        document.getElementById('settingsButton')?.addEventListener('click', () => {
+        const closeSettings = () => {
+            if (modal) modal.style.display = 'none';
+            this.releaseSettingsDialog?.();
+            this.releaseSettingsDialog = null;
+        };
+        document.getElementById('settingsButton')?.addEventListener('click', event => {
+            event.currentTarget.focus();
             if (modal) {
                 modal.style.display = 'flex';
                 this.loadSettings();
+                this.releaseSettingsDialog = window.activateDialog(modal, 'Settings', closeSettings);
             }
         });
 
         document.getElementById('closeSettings')?.addEventListener('click', () => {
-            if (modal) modal.style.display = 'none';
+            closeSettings();
         });
 
         overlay?.addEventListener('click', () => {
-            if (modal) modal.style.display = 'none';
+            closeSettings();
         });
 
         document.getElementById('saveSettings')?.addEventListener('click', () => {
             this.saveSettings();
-            if (modal) modal.style.display = 'none';
+            closeSettings();
         });
 
         document.getElementById('resetProgress')?.addEventListener('click', () => {
             if (confirm('Reset all progress?')) {
                 window.appCore?.progress.reset();
+                try { localStorage.removeItem('wilco_departure_progress'); } catch { /* Storage is optional. */ }
+                const lessonProgress = document.getElementById('departureRecent');
+                if (lessonProgress) lessonProgress.textContent = '';
                 this.loadSettings();
             }
         });
@@ -642,6 +697,7 @@ class ATCTrainingApp {
 
     adjustDifficulty(newDifficulty) {
         if (this.feedbackEngine) {
+            window.appCore?.settings.set('difficulty', newDifficulty);
             this.feedbackEngine.setDifficulty(newDifficulty);
             const difficultySelect = document.getElementById('difficultySelect');
             if (difficultySelect) {

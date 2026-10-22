@@ -8,6 +8,9 @@ actor SpeechRecognitionService {
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
+    private var recognitionID = UUID()
+    private var streamContinuation: AsyncThrowingStream<String, Error>.Continuation?
+    private var hasInputTap = false
 
     init(locale: Locale = .current) {
         self.speechRecognizer = SFSpeechRecognizer(locale: locale)
@@ -30,88 +33,95 @@ actor SpeechRecognitionService {
     }
 
     func startRecognition() -> AsyncThrowingStream<String, Error> {
-        AsyncThrowingStream { continuation in
-            Task {
-                do {
-                    try await performRecognition { transcript in
-                        continuation.yield(transcript)
-                    } onFinish: {
-                        continuation.finish()
-                    }
-                } catch {
-                    continuation.finish(throwing: error)
-                }
+        performStop()
+        let id = recognitionID
+        return AsyncThrowingStream(bufferingPolicy: .bufferingNewest(1)) { continuation in
+            streamContinuation = continuation
+            continuation.onTermination = { [weak self] _ in
+                Task { await self?.stopRecognition(id: id) }
+            }
+            do {
+                try performRecognition(id: id)
+            } catch {
+                continuation.finish(throwing: error)
+                performStop()
             }
         }
     }
 
-    private func performRecognition(
-        onTranscript: @escaping (String) -> Void,
-        onFinish: @escaping () -> Void
-    ) async throws {
-        guard let speechRecognizer = speechRecognizer, speechRecognizer.isAvailable else {
+    private func performRecognition(id: UUID) throws {
+        guard SFSpeechRecognizer.authorizationStatus() == .authorized else {
+            throw SpeechError.notAuthorized
+        }
+        guard AVAudioApplication.shared.recordPermission == .granted else {
+            throw SpeechError.microphoneNotAuthorized
+        }
+        guard let speechRecognizer, speechRecognizer.isAvailable else {
             throw SpeechError.recognizerUnavailable
         }
-
-        // Configure audio session
         let audioSession = AVAudioSession.sharedInstance()
         try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
         try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
 
-        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-
-        guard let recognitionRequest = recognitionRequest else {
-            throw SpeechError.requestCreationFailed
-        }
-
-        recognitionRequest.shouldReportPartialResults = true
-        recognitionRequest.requiresOnDeviceRecognition = false
+        let request = SFSpeechAudioBufferRecognitionRequest()
+        recognitionRequest = request
+        request.shouldReportPartialResults = true
+        request.requiresOnDeviceRecognition = false
 
         let inputNode = audioEngine.inputNode
         let recordingFormat = inputNode.outputFormat(forBus: 0)
-
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
-            self.recognitionRequest?.append(buffer)
+            request.append(buffer)
         }
-
+        hasInputTap = true
         audioEngine.prepare()
         try audioEngine.start()
 
-        recognitionTask = speechRecognizer.recognitionTask(with: recognitionRequest) { result, error in
-            if let result = result {
-                let transcript = result.bestTranscription.formattedString
-                onTranscript(transcript)
+        recognitionTask = speechRecognizer.recognitionTask(with: request) { result, error in
+            Task { self.handleResult(result, error: error, id: id) }
+        }
+    }
 
-                if result.isFinal {
-                    self.stopRecognition()
-                    onFinish()
-                }
-            }
-
-            if error != nil {
-                self.stopRecognition()
-                onFinish()
+    private func handleResult(_ result: SFSpeechRecognitionResult?, error: Error?, id: UUID) {
+        guard recognitionID == id else { return }
+        if let result {
+            streamContinuation?.yield(result.bestTranscription.formattedString)
+            if result.isFinal {
+                performStop()
+                return
             }
         }
+        if let error {
+            streamContinuation?.finish(throwing: error)
+            performStop()
+        }
+    }
+
+    private func stopRecognition(id: UUID) {
+        guard recognitionID == id else { return }
+        performStop()
     }
 
     nonisolated func stopRecognition() {
-        Task {
-            await performStop()
-        }
+        Task { await performStop() }
     }
 
     private func performStop() {
+        recognitionID = UUID()
         audioEngine.stop()
-        audioEngine.inputNode.removeTap(onBus: 0)
+        if hasInputTap {
+            audioEngine.inputNode.removeTap(onBus: 0)
+            hasInputTap = false
+        }
         recognitionRequest?.endAudio()
         recognitionTask?.cancel()
         recognitionRequest = nil
         recognitionTask = nil
-
-        // Deactivate audio session
+        streamContinuation?.finish()
+        streamContinuation = nil
         try? AVAudioSession.sharedInstance().setActive(false)
     }
+
 }
 
 enum SpeechError: Error, LocalizedError {

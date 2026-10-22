@@ -10,6 +10,16 @@ final class RadioSimulatorViewModel {
     var isReceiving: Bool = false
     var isProcessing: Bool = false
     var isMuted: Bool = false
+    var isUsingDemo: Bool = false
+    var voiceAuthorized: Bool = false
+    var errorMessage: String?
+
+    private var sessionID = UUID()
+    private var responseTask: Task<Void, Never>?
+    private var recognitionTask: Task<Void, Never>?
+    private var greetingTask: Task<Void, Never>?
+    private var permissionTask: Task<Void, Never>?
+    private var receivingTask: Task<Void, Never>?
 
     var frequency: String = "118.300"
     var currentTranscript: String = ""
@@ -58,6 +68,7 @@ final class RadioSimulatorViewModel {
     // MARK: - Session Management
 
     func startSession(briefing: ScenarioBriefing) {
+        endSession()
         self.briefing = briefing
         self.scenario = briefing.scenario
         self.frequency = briefing.scenario.category.frequency
@@ -70,20 +81,12 @@ final class RadioSimulatorViewModel {
         progress.incrementSession()
         storageService.saveProgress(progress)
 
-        // Request permissions
-        Task {
-            _ = await speechService.requestAuthorization()
-            _ = await speechService.requestMicrophoneAuthorization()
-        }
-
-        // Initial ATC greeting (if appropriate)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            self?.playInitialGreeting()
-        }
+        prepareSession()
     }
 
     /// Legacy method for scenarios without briefing
     func startSession(scenario: Scenario) {
+        endSession()
         self.scenario = scenario
         self.frequency = scenario.category.frequency
         self.conversationHistory = []
@@ -94,21 +97,48 @@ final class RadioSimulatorViewModel {
         progress.incrementSession()
         storageService.saveProgress(progress)
 
-        Task {
-            _ = await speechService.requestAuthorization()
-            _ = await speechService.requestMicrophoneAuthorization()
-        }
+        prepareSession()
+    }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            self?.playInitialGreeting()
+    private func prepareSession() {
+        let id = sessionID
+        errorMessage = nil
+        isUsingDemo = !networkMonitor.isConnected
+        permissionTask = Task { [weak self] in
+            guard let self else { return }
+            let speech = await speechService.requestAuthorization()
+            let microphone = await speechService.requestMicrophoneAuthorization()
+            guard !Task.isCancelled, sessionID == id else { return }
+            voiceAuthorized = speech == .authorized && microphone
+        }
+        greetingTask = Task { [weak self] in
+            do { try await Task.sleep(for: .seconds(1)) } catch { return }
+            guard let self, !Task.isCancelled, sessionID == id else { return }
+            playInitialGreeting()
         }
     }
 
     func endSession() {
+        sessionID = UUID()
+        responseTask?.cancel()
+        recognitionTask?.cancel()
+        greetingTask?.cancel()
+        permissionTask?.cancel()
+        receivingTask?.cancel()
+        responseTask = nil
+        recognitionTask = nil
+        greetingTask = nil
+        permissionTask = nil
+        receivingTask = nil
         voiceService.stopSpeaking()
         speechService.stopRecognition()
         isTransmitting = false
         isReceiving = false
+        isProcessing = false
+        voiceAuthorized = false
+        scenario = nil
+        briefing = nil
+        conversationHistory = []
     }
 
     private func playInitialGreeting() {
@@ -149,7 +179,7 @@ final class RadioSimulatorViewModel {
                     // Readback taxi clearance
                     return [
                         "Taxi to runway \(atis.activeRunway) via \(route.via.joined(separator: ", ")), hold short runway \(atis.activeRunway), \(callsign)",
-                        "\(callsign), taxi via \(route.via.joined(separator: ", "))"
+                        "\(callsign), taxi via \(route.via.joined(separator: ", ")), hold short runway \(atis.activeRunway)"
                     ]
                 } else {
                     return [
@@ -165,11 +195,12 @@ final class RadioSimulatorViewModel {
                     "Metro Tower, \(callsign), ready for departure runway \(atis.activeRunway), remaining in the pattern",
                     "Metro Tower, \(callsign), ready for takeoff runway \(atis.activeRunway)"
                 ]
-            } else if lastATCMessage?.lowercased().contains("cleared") == true {
-                return [
-                    "Cleared for takeoff runway \(atis.activeRunway), \(callsign)",
-                    "\(callsign), rolling"
-                ]
+            } else if lastATCMessage?.lowercased().contains("cleared for takeoff") == true {
+                return ["Cleared for takeoff runway \(atis.activeRunway), \(callsign)"]
+            } else if lastATCMessage?.lowercased().contains("cleared to land") == true {
+                return ["Cleared to land runway \(atis.activeRunway), \(callsign)"]
+            } else if lastATCMessage?.lowercased().contains("cleared touch and go") == true {
+                return ["Cleared touch and go runway \(atis.activeRunway), \(callsign)"]
             } else {
                 return [
                     "Metro Tower, \(callsign), left downwind runway \(atis.activeRunway)",
@@ -211,21 +242,29 @@ final class RadioSimulatorViewModel {
     // MARK: - Transmission
 
     func startTransmitting() {
-        guard !isReceiving, !isProcessing else { return }
-
+        guard scenario != nil, !isReceiving, !isProcessing, !isTransmitting else { return }
+        guard voiceAuthorized else {
+            errorMessage = "Allow microphone and speech recognition in Settings, or use a text suggestion."
+            return
+        }
+        errorMessage = nil
         isTransmitting = true
         currentTranscript = ""
 
         HapticManager.transmit()
 
         // Start listening
-        Task {
+        let id = sessionID
+        recognitionTask = Task {
             do {
                 for try await transcript in await speechService.startRecognition() {
+                    guard !Task.isCancelled, sessionID == id, isTransmitting else { return }
                     self.currentTranscript = transcript
                 }
             } catch {
-                print("Speech recognition error: \(error)")
+                guard !Task.isCancelled, sessionID == id else { return }
+                errorMessage = error.localizedDescription
+                isTransmitting = false
             }
         }
     }
@@ -234,6 +273,8 @@ final class RadioSimulatorViewModel {
         guard isTransmitting else { return }
 
         isTransmitting = false
+        recognitionTask?.cancel()
+        recognitionTask = nil
         speechService.stopRecognition()
 
         HapticManager.impact(.light)
@@ -257,8 +298,10 @@ final class RadioSimulatorViewModel {
     }
 
     private func sendTransmission(_ message: String) {
-        guard let scenario = scenario else { return }
+        guard let scenario = scenario, !isProcessing, !message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
+        let history = Array(conversationHistory.suffix(20))
+        let id = sessionID
         isProcessing = true
         lastPilotMessage = message
         currentTranscript = ""
@@ -274,29 +317,46 @@ final class RadioSimulatorViewModel {
         let context = buildAPIContext()
 
         // Get ATC response
-        Task {
+        responseTask = Task {
             let response: String
+            var usingDemo = false
 
             if networkMonitor.isConnected {
                 do {
                     let result = try await apiService.sendTransmission(
                         scenario: scenario.category.rawValue,
                         message: message,
-                        history: Array(conversationHistory.suffix(20)),
+                        history: history,
                         customSystemPrompt: context
                     )
-                    response = result.atcResponse ?? demoService.generateResponse(for: message, category: scenario.category)
+                    guard let text = result.atcResponse, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                        throw ATCAPIError.invalidResponse
+                    }
+                    response = text
                 } catch {
-                    response = demoService.generateResponse(for: message, category: scenario.category)
+                    guard !Task.isCancelled, sessionID == id else { return }
+                    usingDemo = true
+                    response = demoResponse(for: message, category: scenario.category)
                 }
             } else {
                 // Offline mode
-                try? await Task.sleep(for: .milliseconds(500))
-                response = demoService.generateResponse(for: message, category: scenario.category)
+                do { try await Task.sleep(for: .milliseconds(500)) } catch { return }
+                usingDemo = true
+                response = demoResponse(for: message, category: scenario.category)
             }
 
+            guard !Task.isCancelled, sessionID == id else { return }
+            isUsingDemo = usingDemo
             self.receiveATCResponse(response)
         }
+    }
+
+    private func demoResponse(for message: String, category: Category) -> String {
+        let response = demoService.generateResponse(for: message, category: category)
+        guard let briefing else { return response }
+        return response
+            .replacingOccurrences(of: "runway 27", with: "runway \(briefing.atis.activeRunway)")
+            .replacingOccurrences(of: "wind 270 at 8", with: "wind \(briefing.atis.wind.description)")
     }
 
     /// Build additional context for the API based on briefing
@@ -340,21 +400,25 @@ final class RadioSimulatorViewModel {
 
         // Add to history
         conversationHistory.append(ConversationEntry(role: "assistant", content: personalizedResponse))
+        conversationHistory = Array(conversationHistory.suffix(20))
 
         HapticManager.receive()
 
+        let id = sessionID
         // Speak the response
         if !isMuted {
             voiceService.speakATC(personalizedResponse) { [weak self] in
                 Task { @MainActor in
-                    self?.isReceiving = false
+                    guard let self, self.sessionID == id else { return }
+                    self.isReceiving = false
                 }
             }
         } else {
             // If muted, just show for a few seconds
-            Task { @MainActor [weak self] in
-                try? await Task.sleep(for: .seconds(3))
-                self?.isReceiving = false
+            receivingTask = Task { @MainActor [weak self] in
+                do { try await Task.sleep(for: .seconds(3)) } catch { return }
+                guard let self, !Task.isCancelled, sessionID == id else { return }
+                isReceiving = false
             }
         }
     }
@@ -365,6 +429,7 @@ final class RadioSimulatorViewModel {
         isMuted.toggle()
         if isMuted {
             voiceService.stopSpeaking()
+            isReceiving = false
         }
         HapticManager.selection()
     }

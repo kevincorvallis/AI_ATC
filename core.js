@@ -53,7 +53,16 @@ class SettingsManager {
         try {
             const stored = localStorage.getItem(STORAGE_KEYS.SETTINGS);
             if (stored) {
-                this.settings = { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
+                const value = JSON.parse(stored);
+                if (value && typeof value === 'object' && !Array.isArray(value)) {
+                    if (['beginner', 'intermediate', 'advanced'].includes(value.difficulty)) {
+                        this.settings.difficulty = value.difficulty;
+                    }
+                    if (typeof value.autoPlayATC === 'boolean') this.settings.autoPlayATC = value.autoPlayATC;
+                    if (Number.isFinite(value.speechRate) && value.speechRate >= 0.5 && value.speechRate <= 2) {
+                        this.settings.speechRate = value.speechRate;
+                    }
+                }
             }
         } catch (e) {
             console.error('Failed to load settings:', e);
@@ -73,6 +82,10 @@ class SettingsManager {
     }
 
     set(key, value) {
+        if (!Object.hasOwn(DEFAULT_SETTINGS, key)) return;
+        if (key === 'difficulty' && !['beginner', 'intermediate', 'advanced'].includes(value)) return;
+        if (key === 'autoPlayATC' && typeof value !== 'boolean') return;
+        if (key === 'speechRate' && (!Number.isFinite(value) || value < 0.5 || value > 2)) return;
         this.settings[key] = value;
         this.save();
     }
@@ -98,7 +111,13 @@ class ProgressManager {
         try {
             const stored = localStorage.getItem(STORAGE_KEYS.PROGRESS);
             if (stored) {
-                this.progress = JSON.parse(stored);
+                const value = JSON.parse(stored);
+                if (value && typeof value === 'object' && !Array.isArray(value)) {
+                    for (const key of ['totalSessions', 'totalTransmissions']) {
+                        if (Number.isSafeInteger(value[key]) && value[key] >= 0) this.progress[key] = value[key];
+                    }
+                    if (Number.isFinite(value.startTime) && value.startTime > 0) this.progress.startTime = value.startTime;
+                }
             }
         } catch (e) {
             console.error('Failed to load progress:', e);
@@ -156,3 +175,48 @@ document.addEventListener('DOMContentLoaded', () => {
     appCore = new AppCore();
     window.appCore = appCore;
 });
+
+// Shared keyboard behavior for modal dialogs, including focus restoration.
+window.activateDialog = function activateDialog(modal, label, onClose) {
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    const inertElements = Array.from(document.body.children).filter(element =>
+        element !== modal && !element.contains(modal) && !element.inert);
+    const container = document.querySelector('.container');
+    if (container && container.contains(modal)) {
+        inertElements.push(...Array.from(container.children).filter(element => element !== modal && !element.inert));
+    }
+    inertElements.forEach(element => { element.inert = true; });
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', label);
+    modal.tabIndex = -1;
+    modal.querySelectorAll('.close-btn').forEach(button => button.setAttribute('aria-label', 'Close ' + label));
+    document.body.style.overflow = 'hidden';
+    const focusable = () => Array.from(modal.querySelectorAll('button, input, select, a[href], [tabindex="0"]'))
+        .filter(element => !element.disabled && element.getClientRects().length > 0);
+    const onKey = event => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            onClose();
+        } else if (event.key === 'Tab') {
+            const elements = focusable();
+            if (!elements.length) { event.preventDefault(); modal.focus(); return; }
+            const first = elements[0];
+            const last = elements[elements.length - 1];
+            if (event.shiftKey && (document.activeElement === first || !elements.includes(document.activeElement))) {
+                event.preventDefault(); last.focus();
+            } else if (!event.shiftKey && (document.activeElement === last || !elements.includes(document.activeElement))) {
+                event.preventDefault(); first.focus();
+            }
+        }
+    };
+    modal.addEventListener('keydown', onKey);
+    (focusable()[0] || modal).focus();
+    return () => {
+        modal.removeEventListener('keydown', onKey);
+        inertElements.forEach(element => { element.inert = false; });
+        document.body.style.overflow = previousOverflow;
+        if (previousFocus?.isConnected) previousFocus.focus();
+    };
+};

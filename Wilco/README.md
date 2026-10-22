@@ -1,113 +1,47 @@
-# Wilco - ATC Radio Training for iOS
+# Wilco for iOS
 
-A native iOS app for practicing Air Traffic Control radio communications. Built with SwiftUI for iPhone and iPad.
+A native SwiftUI preview for practicing ATC radio communications on iPhone and iPad. It includes **8 scenarios** across pattern work, ground operations, flight following, and emergencies, with voice input, spoken responses, scripted fallback, and local progress tracking.
 
-## Features
+Practice simulation only. It is not a navigation aid, real ATC, or a substitute for instruction.
 
-- **20 Training Scenarios** across 4 categories:
-  - Pattern Work (traffic patterns at towered airports)
-  - Ground Operations (taxi and ground control)
-  - Flight Following (VFR radar services)
-  - Emergency Procedures (emergency communications)
+## Open and build
 
-- **Voice Input** - Speak your transmissions using the built-in microphone
-- **AI-Powered ATC** - Realistic ATC responses powered by GPT-4
-- **Offline Demo Mode** - Practice without internet connection
-- **Progress Tracking** - Track your sessions and transmissions
-- **iPad Optimized** - Sidebar navigation on larger screens
+Open the existing `Wilco.xcodeproj` in Xcode. The deployment target is iOS 17.0; no third-party packages are required. From the repository root, build without signing:
 
-## Requirements
-
-- iOS 17.0+
-- Xcode 15.0+
-- Swift 5.9+
-
-## Setup Instructions
-
-### 1. Create Xcode Project
-
-1. Open Xcode
-2. File → New → Project
-3. Select "App" under iOS
-4. Configure:
-   - Product Name: `Wilco`
-   - Organization Identifier: `com.yourname`
-   - Interface: SwiftUI
-   - Language: Swift
-   - Minimum Deployment: iOS 17.0
-   - Check "Include Tests" if desired
-
-### 2. Add Source Files
-
-1. Delete the auto-generated `ContentView.swift`
-2. Drag and drop all folders from this `Wilco/` directory into your Xcode project:
-   - `App/`
-   - `Models/`
-   - `ViewModels/`
-   - `Services/`
-   - `Views/`
-   - `Resources/`
-   - `Extensions/`
-   - `Utilities/`
-3. Make sure "Copy items if needed" is checked
-4. Select "Create groups" for added folders
-
-### 3. Configure Info.plist
-
-The `Info.plist` file contains required privacy descriptions for:
-- Microphone access
-- Speech recognition
-
-Either:
-- Replace the auto-generated Info.plist with the one in this folder, OR
-- Add these keys manually in Xcode's Info tab
-
-### 4. Create Assets
-
-In `Assets.xcassets`, create:
-
-**AppIcon** - Your app icon (1024x1024 for App Store)
-
-**Colors**:
-- `LaunchBackground` - Dark blue (#0f172a)
-- `AccentColor` - Blue (#3b82f6)
-
-### 5. Build and Run
-
-1. Select your target device (iPhone or iPad simulator)
-2. Press Cmd+R to build and run
-
-## Architecture
-
-```
-Wilco/
-├── App/                 # App entry point
-├── Models/              # Data models (Category, Scenario, Message)
-├── ViewModels/          # MVVM view models with @Observable
-├── Services/            # API, Speech, Storage, Network services
-├── Views/               # SwiftUI views organized by feature
-├── Resources/           # Scenario data
-├── Extensions/          # Color theme extensions
-└── Utilities/           # Constants, HapticManager
+```sh
+xcodebuild -project Wilco/Wilco.xcodeproj -scheme Wilco \
+  -configuration Release -sdk iphonesimulator \
+  -destination 'generic/platform=iOS Simulator' \
+  -derivedDataPath /tmp/wilco-build CODE_SIGNING_ALLOWED=NO build
 ```
 
-## API Integration
+Configure signing in Xcode before running on a physical device. Microphone and speech-recognition permission descriptions are included in `Info.plist`.
 
-The app connects to the existing AWS Lambda backend:
+## Current status
+
+The Release simulator build was verified with Xcode 27 for arm64 and x86_64. Sessions cancel pending responses and voice playback, reject stale callbacks, check speech permissions, and identify scripted fallback when AI is unavailable. Speech recognition may use Apple's service; offline speech recognition is not guaranteed. The app stores settings and progress locally and does not save audio recordings.
+
+The native preview still requires physical-device microphone and session-lifecycle testing, signed archive validation, and authentication integration with the protected backend before release. `Utilities/Constants.swift` currently contains the legacy API endpoint; configure it for your deployment. An unavailable endpoint falls back to scripted practice responses.
+
+The public web demo has its own release process and does not require the native app.
+
+## Regression checks
+
+From the repository root:
+
+```sh
+swiftc Wilco/Services/DemoModeService.swift tests/training-native.swift \
+  -o /tmp/wilco-demo-check
+/tmp/wilco-demo-check
 ```
-POST https://3zk0d6e54l.execute-api.us-east-1.amazonaws.com/atc
-```
 
-When offline, the app automatically falls back to demo mode with pattern-matched responses.
+The six checks cover takeoff and landing readbacks, taxi requests and readbacks, and tower handoffs. They exercise the response generator without microphone access or network requests.
 
-## Key Technologies
+## Structure
 
-- **SwiftUI** with iOS 17 features (@Observable, NavigationSplitView)
-- **Speech Framework** for voice input
-- **Async/await** for networking
-- **MVVM Architecture** with dependency injection
-- **UserDefaults** for local persistence
+- `App/`, `Views/`, `ViewModels/`: SwiftUI interface and session state
+- `Services/`: API, voice, recognition, network, and persistence
+- `Models/`, `Resources/`: scenario data, briefings, and assets
+- `Utilities/`, `Extensions/`: configuration and shared helpers
 
-## License
-
-MIT License - Feel free to use and modify for your own projects.
+MIT license.

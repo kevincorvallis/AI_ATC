@@ -5,6 +5,16 @@ struct DemoModeService {
         let msg = message.lowercased()
         let callsign = extractCallsign(from: message) ?? "Cessna 12345"
 
+        // Acknowledgments should not trigger a second, conflicting clearance.
+        if msg.contains("cleared for takeoff") {
+            return "\(callsign), roger, report downwind."
+        }
+        if msg.contains("cleared to land") || msg.contains("cleared touch and go") {
+            return "\(callsign), roger."
+        }
+        if msg.contains("contact tower") {
+            return "\(callsign), roger, frequency change approved."
+        }
         // Pattern matching for common transmissions
         if msg.contains("ready for departure") || msg.contains("ready for takeoff") {
             return "\(callsign), runway 27, cleared for takeoff, wind 270 at 8."
@@ -30,16 +40,17 @@ struct DemoModeService {
             return "\(callsign), roger, contact ground 121.9."
         }
 
-        if msg.contains("taxi") && msg.contains("runway") {
-            return "\(callsign), taxi to runway 27 via Alpha, hold short runway 27."
+        if msg.contains("taxi") && (msg.contains("ready") || msg.contains("request")) {
+            return "\(callsign), runway 27, taxi via Alpha, hold short runway 27."
         }
-
-        if msg.contains("taxi") {
-            return "\(callsign), taxi to parking via Alpha."
+        if msg.contains("taxi") && msg.contains("hold short") {
+            return "\(callsign), readback received, report holding short."
         }
-
         if msg.contains("holding short") {
-            return "\(callsign), hold short runway 27, traffic on final."
+            return "\(callsign), contact tower 118.3."
+        }
+        if msg.contains("taxi") {
+            return "\(callsign), say destination and request."
         }
 
         if msg.contains("flight following") || msg.contains("vfr") {
